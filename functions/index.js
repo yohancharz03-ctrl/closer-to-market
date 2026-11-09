@@ -1,7 +1,7 @@
 const {onCall,onRequest,HttpsError}=require('firebase-functions/v2/https');
 const {onDocumentCreated}=require('firebase-functions/v2/firestore');
 const {onSchedule}=require('firebase-functions/v2/scheduler');
-const admin=require('firebase-admin');admin.initializeApp(process.env.FIREBASE_SERVICE_ACCOUNT?{credential:admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))}:undefined);
+const admin=require('firebase-admin');(process.env.FIREBASE_SERVICE_ACCOUNT?require('../netlify/lib/init')():(admin.apps.length||admin.initializeApp()));
 const db=admin.firestore(),F=admin.firestore.FieldValue,inc=F.increment,union=F.arrayUnion,DAY=864e5;
 const FEE=.05,CASHBACK=.04,SHOP_FEE=10000,WD_MIN=50000,FREE_WD=2,selcom=a=>Math.max(500,Math.round(a*.015)); // makadirio ya Selcom
 const err=(c,m)=>new HttpsError(c,m),uidOf=r=>{if(!r.auth)throw err('unauthenticated','Ingia kwanza');const em=String(r.auth.token.email||'').toLowerCase();if(process.env.REQUIRE_VERIFIED_EMAIL!=='false'&&!r.auth.token.email_verified&&em!=='ctm2026@gmail.com')throw err('failed-precondition','Thibitisha email yako kwanza.');return r.auth.uid;};

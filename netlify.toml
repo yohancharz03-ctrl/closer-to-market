@@ -1,10 +1,9 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/ctm/:splat"
-  status = 200
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["firebase-admin", "firebase-functions"]
 [[redirects]]
   from = "/api/fn/*"
   to = "/.netlify/functions/fn/:splat"
@@ -13,5 +12,10 @@
 [[redirects]]
   from = "/api/lk"
   to = "/.netlify/functions/lk"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/ctm/:splat"
   status = 200
   force = true

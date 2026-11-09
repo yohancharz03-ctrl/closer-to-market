@@ -3,9 +3,7 @@
    POST /api/claim    (mteja, Bearer idToken)       -> {text, mode:'deposit'|'order', orderIds:[]}
    POST /api/admin    (admin, Bearer idToken)       -> {action:'approve'|'reject', txId}
    Env: FIREBASE_SERVICE_ACCOUNT (JSON), SMS_SECRET */
-const admin=require('firebase-admin');
-if(!admin.apps.length)admin.initializeApp({credential:admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))});
-const db=admin.firestore(),inc=admin.firestore.FieldValue.increment,union=admin.firestore.FieldValue.arrayUnion;
+const admin=require('firebase-admin'),init=require('../lib/init');let db,inc,union;
 const R=(c,o)=>({statusCode:c,headers:{'content-type':'application/json'},body:JSON.stringify(o)});
 const rid=()=>Date.now()*1000+Math.floor(Math.random()*1000),P=u=>db.doc('private/'+u);
 
@@ -48,6 +46,7 @@ async function settle(txId,claim,force){
     return{status:'done',escrow:amt-ex,wallet:ex};});}
 
 exports.handler=async ev=>{
+  try{init();}catch(e){return R(500,{error:'Seva: '+e.message});}db=admin.firestore();inc=admin.firestore.FieldValue.increment;union=admin.firestore.FieldValue.arrayUnion;
   const route=(ev.path||'').split('/').pop(),body=(()=>{try{return JSON.parse(ev.body||'{}')}catch(e){return{}}})();
   if(ev.httpMethod!=='POST')return R(405,{error:'POST tu'});
   if(route==='sms-in'){
