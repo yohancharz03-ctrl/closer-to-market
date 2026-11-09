@@ -39,12 +39,6 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Ficha iframe au sehemu yenye Netlify badge */
-iframe[src*="netlify"], 
-[class*="netlify"], 
-a[href*="netlify.com"] {
-    display: none !important;
-}
     </style>
     <!-- Firebase SDK & Firestore Database Integration -->
     <script type="module">
@@ -1775,6 +1769,9 @@ a[href*="netlify.com"] {
                         <button onclick="switchTab('about_page')" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>ℹ️ Kuhusu Sisi (About Us)</span><span class="text-slate-500">›</span></button>
                         <button onclick="ctmInstall()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>📲 Weka App kwenye Simu</span><span class="text-slate-500">›</span></button>
                         <button onclick="ctmFeedback()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>💬 Tuma Maoni kwa CTM</span><span class="text-slate-500">›</span></button>
+                        <button onclick="ctmHelp()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>🆘 Msaada (Help)</span><span>›</span></button>
+                        <button onclick="ctmPinMenu()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>🔐 PIN ya Wallet</span><span>›</span></button>
+                        ${currentUser.role==='admin'?`<button onclick="ctmAdminCfg()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>⚙ Namba za Malipo & Help</span><span>›</span></button><button onclick="ctmAdminSms()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>📩 SMS & Madai ya Malipo</span><span>›</span></button><button onclick="ctmNewStory()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>📢 Weka Story ya CTM (kwa wote)</span><span>›</span></button>`:''}
                         ${currentUser.role==='vendor'?`<button onclick="ctmVerify()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>✅ Thibitisha Duka (Trusted)</span><span class="text-slate-500">›</span></button>`:''}
                         ${currentUser.role === 'vendor' ? `<button onclick="openPaymentStatus()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>💳 Wallet & Malipo</span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>` : ''}
                         <button onclick="openNotificationsPage()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>🔔 Taarifa (Notifications)</span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
@@ -2584,7 +2581,7 @@ window.ctmAfterHydrate=function(){
     const d=new Date().toDateString();if(currentUser.daysRemaining<=7&&me.feeNote!==d){me.feeNote=d;C.notify(me.id,'Kumbusho la Ada ya Duka','Usajili',`Ada ya TZS 10,000 inaisha baada ya siku ${Math.max(currentUser.daysRemaining,0)}. Lipa kupitia kichupo cha Oda.`);dirty=true;}}
   /* stories: wanaofuatwa + zangu, masaa 24, ambazo hazijaonwa kwanza */
   const seen=(me&&me.seen)||[];
-  storiesList=!me?[]:S.stories.filter(s=>n-s.ts<DAY&&(s.ownerId===me.id||(me.following||[]).includes(s.ownerId)))
+  storiesList=!me?[]:S.stories.filter(s=>n-s.ts<DAY&&(s.ownerId===me.id||(me.following||[]).includes(s.ownerId)||((S.accounts.find(x=>x.id===s.ownerId)||{}).role==='admin')))
     .map(s=>Object.assign({},s,{seen:seen.includes(s.id)})).sort((a,b)=>a.seen-b.seen||b.ts-a.ts);
   /* online kwenye chat */
   chatConversations.forEach(c=>{const ch=S.chats.find(x=>x.id===c.id);const o=ch&&(ch.a===me.id?ch.b:ch.a);c.name=ctmDot(o)+c.name;});
@@ -3346,12 +3343,19 @@ window.ctmSSMs=v=>{S0.musStart=+v;const e=$('ss-ms');if(e)e.textContent=(+v).toF
 window.ctmSSPlayMus=()=>{if(window.__ssa){window.__ssa.pause();}const a=new Audio(S0.musUrl);a.currentTime=S0.musStart;a.play().catch(()=>{});window.__ssa=a;setTimeout(()=>a.pause(),10000);};
 window.ctmSSTrim=(k,v)=>{v=+v;if(k==='s'){S0.ts=Math.min(v,S0.dur-1);if(S0.te-S0.ts<1)S0.te=Math.min(S0.dur,S0.ts+1);if(S0.te-S0.ts>60)S0.te=S0.ts+60;}else{S0.te=Math.max(v,S0.ts+1);if(S0.te-S0.ts>60)S0.ts=S0.te-60;}const vv=$('ss-v');if(vv)vv.currentTime=S0.ts;ssPanel();};
 window.ctmSSMute=()=>{S0.mute=!S0.mute;const v=$('ss-v');if(v)v.muted=S0.mute;ssDraw();};
+window.ctmMusicSmall=async(f,st,len)=>{const rdu=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});window.__musTrim=false;
+  try{const AC=window.AudioContext||window.webkitAudioContext,ac=new AC(),buf=await ac.decodeAudioData(await f.arrayBuffer()),s0=Math.max(0,Math.min(st||0,buf.duration-3)),dur=Math.max(3,Math.min(len||20,45,buf.duration-s0));
+    const src=ac.createBufferSource(),dst=ac.createMediaStreamDestination();src.buffer=buf;src.connect(dst);
+    const mt=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t)),rec=new MediaRecorder(dst.stream,mt?{mimeType:mt,audioBitsPerSecond:24000}:{audioBitsPerSecond:24000}),ch=[];
+    rec.ondataavailable=e=>e.data.size&&ch.push(e.data);const fin=new Promise(r=>rec.onstop=r);await ac.resume();rec.start();src.start(0,s0,dur);
+    await new Promise(r=>setTimeout(r,dur*1000+300));rec.stop();try{src.stop();}catch(e){}await fin;ac.close();window.__musTrim=true;return await rdu(new Blob(ch,{type:rec.mimeType||'audio/webm'}));
+  }catch(e){if(f.size<200000)return rdu(f);throw new Error('Muziki umeshindwa kubanwa ('+(e.message||e)+'). Jaribu wimbo mwingine.');}};
 window.ctmSSPublish=async()=>{if(!S0||!S0.file)return;const b=$('ss-pub');b.disabled=true;b.textContent='Inapakia...';
-  try{const media=await rd(S0.file),music=S0.mus?await rd(S0.mus):null;
+  try{const media=await rd(S0.file),music=S0.mus?(b.textContent='Inabana muziki (subiri)...',await ctmMusicSmall(S0.mus,S0.musStart,S0.type==='video'?Math.min(45,S0.te-S0.ts):20)):null;
     const story={id:Date.now(),name:currentUser.shopName||currentUser.name,img:currentUser.imgUrl,mediaUrl:media,text:S0.cap||'Stori mpya!',type:S0.type,seen:false,isLive:false};
-    if(S0.type==='video'){story.trimStart=S0.ts;story.trimEnd=S0.te;story.muted=S0.mute;}if(music){story.music=music;story.musicStart=S0.musStart;}
+    if(S0.type==='video'){story.trimStart=S0.ts;story.trimEnd=S0.te;story.muted=S0.mute;}if(music){story.music=music;story.musicStart=window.__musTrim?0:S0.musStart;}
     storiesList.unshift(story);ctmSSClose();saveToOfflineCache();switchTab('soko');alert('Story imechapishwa');}
-  catch(e){b.disabled=false;b.textContent='Chapisha Story';alert('Imeshindwa kusoma faili.');}};
+  catch(e){b.disabled=false;b.textContent='Chapisha Story';alert('Imeshindwa kuchapisha: '+(e&&e.message?e.message:'faili haisomeki'));}};
 /* ---------- Ujumbe mpya: sauti + arifa ndani ya app ---------- */
 let lastMsg=Date.now();
 const _ch=window.ctmAfterHydrate;
@@ -3534,12 +3538,12 @@ import {getAuth,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmai
 import {getFunctions,httpsCallable} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 import {getStorage,ref as sref,uploadString,uploadBytes,getDownloadURL} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import {getMessaging,getToken,onMessage,isSupported} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
-import {getFirestore,collection,doc,setDoc,getDoc,deleteDoc,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,doc,setDoc,getDoc,deleteDoc,onSnapshot,query,where,orderBy,limit,getDocs} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 window.CTM_CLOUD=true;try{localStorage.removeItem('ctm_store_v14');}catch(e){}
 const DEFAULT_ADMIN='ctm2026@gmail.com';
 const REQUIRE_VERIFIED_EMAIL=true; /* watumiaji wathibitishe email */
 const APPCHECK_KEY=''; /* reCAPTCHA v3 site key ya App Check (angalia HATUA.txt) */
-const SIMULATE_MONEY=true; /* pesa za majaribio (si halisi) hadi uunganishe malipo halisi */
+const SIMULATE_MONEY=false; /* pesa za majaribio (si halisi) hadi uunganishe malipo halisi */
 const ADMIN_AUTOCREATE=true; /* weka false baada ya admin kuingia mara ya kwanza na kubadili neno la siri */
 /* === WEKA HAPA (Cloudinary - bure): cloud name na upload preset === */
 const CLOUD = { cloud: 'omycrdmb', preset: 'closer_to_market_unsigned' }, USE_CLOUD = !CLOUD.cloud.startsWith('PASTE'); window.CTM_CLOUD_MEDIA = USE_CLOUD;
@@ -3549,7 +3553,7 @@ const CLOUD = { cloud: 'omycrdmb', preset: 'closer_to_market_unsigned' }, USE_CL
    Mfano: const CUSTOM_ICE=[{urls:'stun:stun.relay.metered.ca:80'},{urls:'turn:global.relay.metered.ca:80',username:'...',credential:'...'}];  */
 const CUSTOM_ICE=null;
 window.CTM_ICE=CUSTOM_ICE||[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp','turns:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
-const USE_FN=false,USE_STORAGE=false; /* geuza kuwa true ukihamia Blaze + deploy functions */
+const USE_FN=true,USE_STORAGE=false; /* geuza kuwa true ukihamia Blaze + deploy functions */
 const DEMO=JSON.parse(JSON.stringify({v:vendorsList,p:productsList,r:vendorReelsList}));
 const app=getApps().length?getApp():initializeApp({apiKey:"AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",authDomain:"closer-to-market.firebaseapp.com",projectId:"closer-to-market",storageBucket:"closer-to-market.firebasestorage.app",messagingSenderId:"919367487706",appId:"1:919367487706:web:aac9f57f40737a8a6ed5e3"});
 if(APPCHECK_KEY){try{const ac=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');ac.initializeAppCheck(app,{provider:new ac.ReCaptchaV3Provider(APPCHECK_KEY),isTokenAutoRefreshEnabled:true});}catch(e){console.warn('appcheck',e);}}
@@ -3697,7 +3701,13 @@ window.ctmBrokerSubmit=async()=>{const code=$('bj-code').value.trim().toUpperCas
   }catch(x){alert(emsg(x));}};
 
 /* ---- Server (Cloud Functions) ---- */
-const call=(n,d)=>httpsCallable(fns,n)(d||{}).then(r=>r.data);window.__call=call;
+const API=(path,body)=>auth.currentUser.getIdToken().then(t=>fetch('/api/'+path,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+t},body:JSON.stringify(body||{})})).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Hitilafu '+r.status);return j;});window.__api=API;
+const call=(n,d)=>API('fn/'+n,d).then(j=>j.data);window.__call=call;
+window.ctmPasteSms=(mode,orderIds,done,info)=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:99999;background:#000c;display:flex;align-items:center;justify-content:center;padding:16px';
+  o.innerHTML='<div style="background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:16px;max-width:420px;width:100%;color:#fff;font-size:13px"><p style="font-weight:800;margin-bottom:8px">Bandika SMS ya muamala (M-Pesa)</p><textarea id="ps-t" rows="5" style="width:100%;background:#020617;color:#fff;border:1px solid #334155;border-radius:10px;padding:8px" placeholder="Bandika ujumbe mzima hapa"></textarea><p id="ps-m" style="margin:8px 0;color:#fbbf24"></p><div style="display:flex;gap:8px"><button id="ps-x" style="flex:1;padding:10px;border-radius:10px;background:#334155;color:#fff">Funga</button><button id="ps-y" style="flex:1;padding:10px;border-radius:10px;background:#10b981;color:#020617;font-weight:800">Thibitisha</button></div></div>';
+  document.body.appendChild(o);o.querySelector('#ps-x').onclick=()=>o.remove();
+  o.querySelector('#ps-y').onclick=async()=>{const m=o.querySelector('#ps-m');m.textContent='Inahakiki...';try{const r=await API('claim',{text:o.querySelector('#ps-t').value,mode,orderIds});
+    m.textContent=({done:'Imethibitishwa!',waiting:'SMS ya CTM bado haijafika. Itathibitika yenyewe ikifika.',review:'Inasubiri admin kuhakiki.',short:'Kiasi kimepungua (TZS '+(r.amount||0).toLocaleString()+' kati ya '+(r.need||0).toLocaleString()+'). Kamilisha malipo.',duplicate:'ID hii tayari imetumika.',no_order:'Oda haijapatikana.'})[r.status]||'Imepokelewa';if(r.status==='done'){setTimeout(()=>{o.remove();done&&done(r);},900);}}catch(e){m.textContent=e.message;}};};
 const run=async(p,ok)=>{try{const r=await p;if(ok)alert(ok);return r;}catch(e){alert(e.message||e.code);return null;}};
 if(USE_FN){
 const _a=window.addToCart;window.addToCart=function(id){const p=productsList.find(x=>x.id===id),s=p&&p.stock;_a(id);if(p)p.stock=s;};
@@ -3705,8 +3715,9 @@ window.ctmRemoveCartItem=i=>{cartItems.splice(i,1);saveToOfflineCache();openCart
 window.processCheckoutPayment=async()=>{if(!C.me||!cartItems.length)return alert('Kikapu ni tupu.');
   const f=$('fulfillment_type')?$('fulfillment_type').value:'Delivery',q={};cartItems.forEach(i=>q[i.id]=(q[i.id]||0)+1);
   const loc=await new Promise(r=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>r({lat:p.coords.latitude,lng:p.coords.longitude}),()=>r(null),{timeout:5000}):r(null));
-  const r=await run(call('placeOrder',{items:Object.entries(q).map(([id,qty])=>{const ci=cartItems.find(x=>String(x.id)===id);return ci&&ci.isOffer?{offerId:id}:{id,qty};}),fulfillment:f,loc,note:(C.me.cartNote||'')}),'Oda imewekwa');
-  if(r){cartItems=[];saveToOfflineCache();setTimeout(openOrderHistory,900);}};
+  const r=await run(call('placeOrder',{items:Object.entries(q).map(([id,qty])=>{const ci=cartItems.find(x=>String(x.id)===id);return ci&&ci.isOffer?{offerId:id}:{id,qty};}),fulfillment:f,loc,note:(C.me.cartNote||'')}));
+  if(r){cartItems=[];saveToOfflineCache();const ids=r.orders||[];let pi={};try{pi=await API('pay-info',{orderIds:ids});}catch(e){}
+    ctmPasteSms('order',ids,()=>setTimeout(openOrderHistory,300),'Oda imewekwa. Lipa TZS '+(pi.total||0).toLocaleString()+' kwa:\n'+(pi.pay||'(namba ya malipo haijawekwa)')+'\nKisha bandika SMS ya muamala hapa. Oda haitaenda kwa muuzaji hadi malipo yathibitike.');setTimeout(openOrderHistory,200);}};
 window.ctmShipOrder=id=>run(call('shipOrder',{orderId:id}),'Mzigo umetumwa');
 window.ctmConfirmDelivery=id=>run(call('confirmDelivery',{orderId:id,otp:$('vo-otp-'+id).value}),'Oda imekamilika, pesa zimeingia');
 window.verifyDeliveryOtp=()=>alert('Mpe muuzaji OTP yako mzigo ukifika; yeye ndiye anaithibitisha.');
@@ -3720,12 +3731,29 @@ window.ctmConfirmDelivery=id=>{const S=C.S,o=S.orders.find(x=>x.id===id),me=C.me
   const com=o.commission||0;o.isConfirmedByOtp=true;o.credited=true;o.stage=4;o.status='Imekamilika (Delivered)';ctmSettle(S,o,me);C.persist();C.hydrate();renderCurrentTab();alert('Oda imekamilika');};
 }
 const reauth=async()=>{const pw=$('w-pw').value;if(!pw){alert('Weka neno la siri.');return false;}try{await reauthenticateWithCredential(auth.currentUser,EmailAuthProvider.credential(auth.currentUser.email,pw));return true;}catch(e){alert('Neno la siri si sahihi.');return false;}};
+const E2=s=>String(s==null?'':s).replace(/[<>&"']/g,c=>'&#'+c.charCodeAt(0)+';'),IN='width:100%;background:#020617;color:#fff;border:1px solid #334155;border-radius:10px;padding:9px;margin:4px 0',BT='padding:10px;border-radius:10px;font-weight:800;';
+const ov=h=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:99999;background:#000c;display:flex;align-items:center;justify-content:center;padding:16px';o.innerHTML='<div style="background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:16px;max-width:420px;width:100%;max-height:85vh;overflow:auto;color:#fff;font-size:13px">'+h+'<p id="o-m" style="margin:8px 0;color:#fbbf24"></p></div>';document.body.appendChild(o);return o;};
+const msg=(o,t)=>{o.querySelector('#o-m').textContent=t;},q$=(o,s)=>o.querySelector(s),val=(o,s)=>(q$(o,s)||{}).value||'';
+const cfgGet=async()=>{try{return (await getDoc(doc(db,'config','app'))).data()||{};}catch(e){return {};}};
+window.ctmHelp=async()=>{const h=(await cfgGet()).help||'',o=ov('<p style="font-weight:800;margin-bottom:8px">🆘 Msaada (Help)</p>'+(h?'<p>Wasiliana na CTM kwa namba:</p><a href="tel:'+E2(h)+'" style="display:block;margin:10px 0;font-size:20px;font-weight:800;color:#34d399">📞 '+E2(h)+'</a>':'<p>Namba ya msaada bado haijawekwa na admin.</p>')+'<button id="o-x" style="'+BT+'width:100%;background:#334155;color:#fff">Funga</button>');q$(o,'#o-x').onclick=()=>o.remove();};
+window.ctmAdminCfg=async()=>{const c=await cfgGet(),o=ov('<p style="font-weight:800">⚙ Namba za Malipo & Help</p><p style="color:#94a3b8">Namba ya malipo (wateja wataiona wakilipa):</p><textarea id="c-p" rows="3" style="'+IN+'" placeholder="Vodacom Lipa Namba 123456 - CLOSER TO MARKET">'+E2(c.pay||'')+'</textarea><p style="color:#94a3b8">Namba ya Help:</p><input id="c-h" style="'+IN+'" value="'+E2(c.help||'')+'" placeholder="0755 000 000"><div style="display:flex;gap:8px;margin-top:8px"><button id="o-x" style="'+BT+'flex:1;background:#334155;color:#fff">Funga</button><button id="o-y" style="'+BT+'flex:1;background:#10b981;color:#020617">Hifadhi</button></div>');
+  q$(o,'#o-x').onclick=()=>o.remove();q$(o,'#o-y').onclick=async()=>{try{await setDoc(doc(db,'config','app'),{pay:val(o,'#c-p').slice(0,300),help:val(o,'#c-h').slice(0,40)},{merge:true});msg(o,'Imehifadhiwa');}catch(e){msg(o,e.message);}};};
+window.ctmAdminSms=async()=>{const o=ov('<p style="font-weight:800">📩 SMS & Madai ya Malipo</p><div id="o-l">Inapakia...</div><button id="o-x" style="'+BT+'width:100%;background:#334155;color:#fff;margin-top:8px">Funga</button>');q$(o,'#o-x').onclick=()=>o.remove();
+  try{const cs=(await getDocs(query(collection(db,'claims'),orderBy('ts','desc'),limit(25)))).docs.map(d=>Object.assign({id:d.id},d.data())),rs=(await getDocs(query(collection(db,'rawSms'),orderBy('ts','desc'),limit(25)))).docs.map(d=>d.data());
+    q$(o,'#o-l').innerHTML='<p style="color:#fbbf24;margin:6px 0">Madai</p>'+(cs.map(c=>'<div style="border:1px solid #334155;border-radius:10px;padding:8px;margin:6px 0"><b>'+E2(c.id)+'</b> • '+E2(c.status)+' • TZS '+(c.amount||c.claimedAmount||0).toLocaleString()+(c.need?' (inahitajika '+c.need.toLocaleString()+')':'')+((c.status==='review'||c.status==='short')?'<div style="display:flex;gap:6px;margin-top:6px"><button data-a="approve" data-i="'+E2(c.id)+'" style="'+BT+'flex:1;background:#10b981;color:#020617">Idhinisha</button><button data-a="reject" data-i="'+E2(c.id)+'" style="'+BT+'flex:1;background:#7f1d1d;color:#fff">Kataa</button></div>':'')+'</div>').join('')||'<p>Hakuna.</p>')+'<p style="color:#fbbf24;margin:10px 0 6px">SMS zilizopokelewa (CTM)</p>'+(rs.map(r=>'<div style="border:1px solid #334155;border-radius:10px;padding:8px;margin:6px 0;font-size:11px">'+E2((r.parsed||{}).txId||'⚠ haieleweki')+' • TZS '+((r.parsed||{}).amount||0).toLocaleString()+' • '+E2((r.parsed||{}).src||'')+'<br><span style="color:#94a3b8">'+E2(r.text)+'</span></div>').join('')||'<p>Hakuna.</p>');
+    o.querySelectorAll('button[data-a]').forEach(b=>b.onclick=async()=>{try{const r=await API('admin',{action:b.dataset.a,txId:b.dataset.i});msg(o,'Matokeo: '+(r.status||'sawa'));b.disabled=true;}catch(e){msg(o,e.message);}});}catch(e){q$(o,'#o-l').textContent=e.message;}};
+window.ctmAskPin=()=>new Promise(res=>{const o=ov('<p style="font-weight:800">🔐 Weka PIN ya Wallet</p><input id="p-1" type="password" inputmode="numeric" maxlength="6" style="'+IN+'" placeholder="PIN"><div style="display:flex;gap:8px"><button id="o-x" style="'+BT+'flex:1;background:#334155;color:#fff">Ghairi</button><button id="o-y" style="'+BT+'flex:1;background:#10b981;color:#020617">Endelea</button></div>');q$(o,'#o-x').onclick=()=>{o.remove();res(null);};q$(o,'#o-y').onclick=()=>{const v=val(o,'#p-1');o.remove();res(v||null);};});
+window.ctmPinMenu=async()=>{let st={has:false};try{st=await API('pin',{op:'status'});}catch(e){return alert(e.message);}
+  const fld=(id,ph,t)=>'<input id="'+id+'" '+(t==='n'?'type="password" inputmode="numeric" maxlength="6"':'')+' style="'+IN+'" placeholder="'+ph+'">',btn='<div style="display:flex;gap:8px;margin-top:8px"><button id="o-x" style="'+BT+'flex:1;background:#334155;color:#fff">Funga</button><button id="o-y" style="'+BT+'flex:1;background:#10b981;color:#020617">Hifadhi</button></div>';
+  const o=ov('<p style="font-weight:800">🔐 PIN ya Wallet</p>'+(st.has?'<p style="color:#94a3b8">PIN inahitajika kutoa pesa. Weka PIN mpya hapa chini (utahitaji PIN ya sasa), au bonyeza "Nimesahau PIN".</p>'+fld('p-o','PIN ya sasa','n'):'<p style="color:#94a3b8">Weka PIN ya namba 4-6 na swali la kumbukumbu. Ukisahau PIN, ukijibu swali hili sawa unaweza kuweka PIN mpya.</p>')+fld('p-n','PIN mpya (4-6)','n')+fld('p-q','Swali la kumbukumbu (mfano: Shule ya msingi uliyosoma?)')+fld('p-a','Jibu lako')+btn+(st.has?'<button id="o-f" style="'+BT+'width:100%;background:none;color:#fbbf24;margin-top:6px">Nimesahau PIN</button>':''));
+  q$(o,'#o-x').onclick=()=>o.remove();q$(o,'#o-y').onclick=async()=>{try{await API('pin',{op:'set',old:val(o,'#p-o'),pin:val(o,'#p-n'),q:val(o,'#p-q'),a:val(o,'#p-a')});msg(o,'PIN imehifadhiwa');setTimeout(()=>o.remove(),900);}catch(e){msg(o,e.message);}};
+  if(st.has)q$(o,'#o-f').onclick=()=>{o.remove();const r=ov('<p style="font-weight:800">Weka PIN mpya</p><p style="color:#94a3b8">Swali: <b style="color:#fff">'+E2(st.q)+'</b></p>'+fld('r-a','Jibu lako')+fld('r-n','PIN mpya (4-6)','n')+'<p style="color:#94a3b8;font-size:11px">Hujui jibu? Wasiliana na CTM kupitia Msaada.</p>'+btn);q$(r,'#o-x').onclick=()=>r.remove();q$(r,'#o-y').onclick=async()=>{try{await API('pin',{op:'reset',a:val(r,'#r-a'),pin:val(r,'#r-n')});msg(r,'PIN mpya imewekwa');setTimeout(()=>r.remove(),900);}catch(e){msg(r,e.message);}};};};
 window.ctmWithdraw=async()=>{const a=Math.floor(+$('w-amt').value),me=C.me;if(!(a>=1000))return alert('Kiwango cha chini TZS 1,000.');if(!(await reauth()))return;
-  if(USE_FN)return run(call('withdraw',{amount:a}),'Ombi la kutoa pesa limepokelewa');
+  if(USE_FN){const pin=await ctmAskPin();if(!pin)return;return run(call('withdraw',{amount:a,pin}),'Ombi la kutoa pesa limepokelewa');}
   if(me.role!=='vendor'&&me.role!=='dalali')return alert('Mteja hawezi kutoa pesa.');return ctmDoWithdraw(a);};
 window.ctmDeposit=async()=>{const a=Math.floor(+$('w-amt').value);if(!(a>=1000))return alert('Kiwango cha chini TZS 1,000.');if(!(await reauth()))return;
   const l=document.createElement('a');l.href='tel:*150*00%23';l.click();
-  if(USE_FN){if(SIMULATE_MONEY){await run(call('testDeposit',{amount:a}),'Salio la majaribio limeongezwa (si pesa halisi).');return;}return alert('Maliza malipo kwa USSD. Salio litaongezeka lenyewe malipo yakithibitishwa.');}
+  if(USE_FN){if(SIMULATE_MONEY){await run(call('testDeposit',{amount:a}),'Salio la majaribio limeongezwa (si pesa halisi).');return;}return ctmPasteSms('deposit',[],()=>{});}
   setTimeout(()=>{ctmAsk('Umekamilisha malipo kwa USSD? (hali ya majaribio)',()=>{const me=C.me;me.walletBalance=(me.walletBalance||0)+a;me.tx=[{t:'Deposit',a,n:'Deposit (jaribio)',ts:Date.now()},...(me.tx||[])];C.persist();C.hydrate();renderCurrentTab();});},600);};
 /* ---- Data za majaribio (Admin tu) ---- */
 window.ctmSeedDemo=async()=>{if(!C.me||C.me.role!=='admin')return alert('Admin tu.');

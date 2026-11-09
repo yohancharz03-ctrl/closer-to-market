@@ -1,7 +1,7 @@
 const {onCall,onRequest,HttpsError}=require('firebase-functions/v2/https');
 const {onDocumentCreated}=require('firebase-functions/v2/firestore');
 const {onSchedule}=require('firebase-functions/v2/scheduler');
-const admin=require('firebase-admin');admin.initializeApp();
+const admin=require('firebase-admin');admin.initializeApp(process.env.FIREBASE_SERVICE_ACCOUNT?{credential:admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))}:undefined);
 const db=admin.firestore(),F=admin.firestore.FieldValue,inc=F.increment,union=F.arrayUnion,DAY=864e5;
 const FEE=.05,CASHBACK=.04,SHOP_FEE=10000,WD_MIN=50000,FREE_WD=2,selcom=a=>Math.max(500,Math.round(a*.015)); // makadirio ya Selcom
 const err=(c,m)=>new HttpsError(c,m),uidOf=r=>{if(!r.auth)throw err('unauthenticated','Ingia kwanza');const em=String(r.auth.token.email||'').toLowerCase();if(process.env.REQUIRE_VERIFIED_EMAIL!=='false'&&!r.auth.token.email_verified&&em!=='ctm2026@gmail.com')throw err('failed-precondition','Thibitisha email yako kwanza.');return r.auth.uid;};
@@ -30,12 +30,11 @@ exports.placeOrder=onCall(async req=>{const uid=uidOf(req),d=req.data||{},items=
       shops[vid]={v,parent:v.role==='dalali'?(await byId(t,v.parentId)).data():null};}
     const ids=[];
     for(const [vid,g] of Object.entries(groups)){const {v,parent}=shops[vid],boss=parent||v,total=g.reduce((s,x)=>s+x.p.price*x.q,0),id='ORD-'+Math.floor(10000+Math.random()*90000),otp=String(Math.floor(1000+Math.random()*9000));
-      const o={id,customerId:m.id,customerUid:uid,customerName:m.name,vendorId:boss.id,vendorUid:boss.uid,vendor:boss.shopName,date:new Date().toLocaleDateString('en-GB'),ts:Date.now(),items:g.map(x=>x.p.name+(x.q>1?' x'+x.q:'')).join(', '),productImg:g[0].p.image||'',total,status:'Inaandaliwa',stage:2,fulfillment:f,isConfirmedByOtp:false,loc,note:note0,isOffer:g.some(x=>x.offer)};
+      const o={id,customerId:m.id,customerUid:uid,customerName:m.name,vendorId:boss.id,vendorUid:boss.uid,vendor:boss.shopName,date:new Date().toLocaleDateString('en-GB'),ts:Date.now(),items:g.map(x=>x.p.name+(x.q>1?' x'+x.q:'')).join(', '),productImg:g[0].p.image||'',total,status:'Inasubiri Malipo',stage:1,payStatus:'PENDING',fulfillment:f,isConfirmedByOtp:false,loc,note:note0,isOffer:g.some(x=>x.offer)};
       if(parent){o.brokerId=v.id;o.brokerUid=v.uid;o.brokerName=v.name;o.commission=Math.round(total*v.pct/100);}
       t.set(db.doc('orders/'+id),o);t.set(db.doc('orderSecrets/'+id),{customerUid:uid,otp});
       g.forEach(x=>t.update(x.ref,{stock:inc(-x.q)}));
       note(t,m,'Oda Mpya Imethibitishwa',`Oda ${id} kutoka ${boss.shopName}. OTP yako: [ ${otp} ]. Mpe muuzaji mzigo ukifika.`);
-      note(t,boss,'Oda Mpya Imepokelewa',`${m.name} ameagiza ${o.items} (TZS ${total.toLocaleString()}).`);
       if(parent)note(t,v,'Oda kupitia Duka Lako',`Oda ${id}: commission TZS ${o.commission.toLocaleString()} baada ya mzigo kufika.`);ids.push(id);}
     return {orders:ids};});});
 

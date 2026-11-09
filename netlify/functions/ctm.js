@@ -13,11 +13,12 @@ const rid=()=>Date.now()*1000+Math.floor(Math.random()*1000),P=u=>db.doc('privat
 function parse(t){t=String(t||'').replace(/\s+/g,' ');
   const tok=(t.match(/\b[A-Za-z0-9][A-Za-z0-9.]{7,24}[A-Za-z0-9]\b/g)||[]).find(x=>/[A-Za-z]/.test(x)&&/\d/.test(x)&&!/^(\+?255|0)\d+$/.test(x));
   const id=(t.match(/(?:Transaction ID|Muamala|Miamala|Trans(?:action)? ?(?:ID|No)|Reference|Kumbukumbu|Ref|TxnId|TID)[:.\s#-]*([A-Za-z0-9][A-Za-z0-9.]{6,24}[A-Za-z0-9])/i)||[])[1]||tok;
-  const am=(t.match(/(?:TZS|TSh|Tsh)\.?\s?([\d][\d,]*(?:\.\d+)?)/i)||t.match(/([\d][\d,]*(?:\.\d+)?)\s?(?:TZS|TSh|Tsh)/i)||[])[1];
-  const nm=(t.match(/(?:kutoka kwa|kutoka|from)\s+([A-Za-z][A-Za-z .'-]{2,40}?)(?=\s+(?:\d|\+|on |tarehe|kwa |Salio|Bal|at )|[.,]|$)/i)||[])[1];
+  const am=(t.match(/(?:TZS|Tshs?)\.?\s?([\d][\d,]*(?:\.\d+)?)/i)||t.match(/([\d][\d,]*(?:\.\d+)?)\s?(?:TZS|Tshs?)/i)||[])[1];
+  const fr=(t.match(/(?:kutoka kwa|kutoka|from)\s+(.+?)(?=\s+(?:tarehe|mnamo|saa|on|at)\b|\s*\.\s*$|$)/i)||[])[1]||'';
+  const src=(fr.split(/[:,-]/)[0]||'').trim().slice(0,30),nm=(fr.match(/(?:\s-\s*|Jina\s*:?\s*)([^*]*)$/i)||[])[1];
   const ph=(t.match(/(?:\+?255|0)[67]\d{8}/)||[])[0];
   const dt=(t.match(/\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}(?:\s+(?:saa\s+|at\s+)?\d{1,2}[:.]\d{2})?/i)||[])[0];
-  return{txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,name:(nm||'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
+  return{txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:(nm||'').replace(/^Jina\s*/i,'').replace(/[.*]+/g,'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,'').split(' ').filter(x=>x.length>2);
 const note=(t,a,title,details)=>{const id=rid();t.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Oda & Malipo',details,read:false,ts:Date.now()});};
 const led=(t,kind,amount,ref,n)=>{const id=rid();t.set(db.doc('ledger/'+id),{id,kind,amount,ref:String(ref||''),note:n||'',ts:Date.now()});};
@@ -29,7 +30,7 @@ async function settle(txId,claim,force){
     if(!b.exists)return{status:'waiting'};const bt=b.data();if(bt.usedBy)return{status:'duplicate'};
     const cl=c.exists?c.data():claim;if(!cl)return{status:'waiting'};if(c.exists&&cl.status==='done')return{status:'duplicate'};
     const acc=(await t.get(db.doc('accounts/'+cl.uid))).data()||{};
-    const ok=force||(bt.phone&&acc.phone&&String(acc.phone).replace(/\D/g,'').slice(-9)===bt.phone)||norm(bt.name).some(w=>norm(acc.name).includes(w));
+    const hasId=bt.phone||norm(bt.name).length,ok=force||!hasId||(bt.phone&&acc.phone&&String(acc.phone).replace(/\D/g,'').slice(-9)===bt.phone)||norm(bt.name).some(w=>norm(acc.name).includes(w));
     if(!ok){t.set(cref,Object.assign({},cl,{status:'review',amount:bt.amount}));return{status:'review'};}
     const amt=bt.amount;let ex=amt,held=[];
     if(cl.mode==='order'){
@@ -59,6 +60,15 @@ exports.handler=async ev=>{
     return R(200,{ok:true,parsed:true,settled:r});}
   let u;try{u=await admin.auth().verifyIdToken(String((ev.headers.authorization||'').replace('Bearer ','')));}catch(e){return R(401,{error:'Ingia kwanza'});}
   const me=(await db.doc('accounts/'+u.uid).get()).data();if(!me)return R(403,{error:'Akaunti haipo'});
+  if(route==='pin'){const Pn=require('../lib/pin')(db);try{
+      if(body.op==='status')return R(200,await Pn.status(u.uid));
+      if(body.op==='set'){await Pn.set(u.uid,body.pin,body.q,body.a,body.old);return R(200,{ok:true});}
+      if(body.op==='check'){await Pn.verify(u.uid,body.pin);return R(200,{ok:true});}
+      if(body.op==='reset'){await Pn.reset(u.uid,body.a,body.pin);return R(200,{ok:true});}
+    }catch(e){return R(e.status||500,{error:e.message});}return R(400,{error:'op?'});}
+  if(route==='pay-info'){let total=0;const ids=(body.orderIds||[]).map(String).slice(0,20);
+    for(const id of ids){const o=(await db.doc('orders/'+id).get()).data();if(o&&o.customerUid===u.uid&&o.payStatus==='PENDING')total+=o.total;}
+    const cfg=(await db.doc('config/app').get()).data()||{};return R(200,{total,pay:cfg.pay||process.env.CTM_PAY||'',help:cfg.help||process.env.CTM_HELP||''});}
   if(route==='claim'){
     const p=parse(body.text);if(!p.txId||!p.amount)return R(400,{error:'Sijaelewa SMS. Bandika ujumbe mzima wa muamala.'});
     const mode=body.mode==='order'?'order':'deposit',ref=db.doc('claims/'+p.txId);

@@ -127,4 +127,7 @@ service cloud.firestore { match /databases/{db}/documents {
   match /withdrawals/{id} { allow read, write: if false; }
   match /deposits/{id} { allow read, write: if false; }
   match /cashback/{id} { allow read, write: if false; }
+  match /bankTx/{id} { allow read: if isAdm(); allow write: if false; }
+  match /claims/{id} { allow read: if isAdm(); allow write: if false; }
+  match /rawSms/{id} { allow read: if isAdm(); allow write: if false; }
 } }

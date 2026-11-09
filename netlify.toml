@@ -5,3 +5,13 @@
   from = "/api/*"
   to = "/.netlify/functions/ctm/:splat"
   status = 200
+[[redirects]]
+  from = "/api/fn/*"
+  to = "/.netlify/functions/fn/:splat"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/api/lk"
+  to = "/.netlify/functions/lk"
+  status = 200
+  force = true
