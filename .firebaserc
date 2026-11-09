@@ -1,0 +1,13 @@
+{
+  "projects": {},
+  "targets": {
+    "closer-to-market": {
+      "hosting": {
+        "closer-to-market": [
+          "closer-to-market"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

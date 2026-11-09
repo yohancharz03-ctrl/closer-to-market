@@ -1,0 +1,130 @@
+rules_version = '2';
+// RULES ZA PRODUCTION (zinahitaji USE_FN=true na Cloud Functions). Pesa, OTP, idhini na makato vinaandikwa na server tu.
+service cloud.firestore { match /databases/{db}/documents {
+  function signed() { return request.auth != null; }
+  function hasAcc() { return signed() && exists(/databases/$(db)/documents/accounts/$(request.auth.uid)); }
+  function acc() { return get(/databases/$(db)/documents/accounts/$(request.auth.uid)); }
+  function myId() { return acc().data.id; }
+  function isAdm() { return hasAcc() && acc().data.role == 'admin'; }
+  function adminEmail() { return exists(/databases/$(db)/documents/config/admin) ? get(/databases/$(db)/documents/config/admin).data.email : 'ctm2026@gmail.com'; }
+  function isAdminEmail() { return signed() && request.auth.token.email.lower() == adminEmail(); }
+  function ver() { return signed() && (request.auth.token.email_verified == true || isAdminEmail()); }
+  function txt(s) { return s is string && s.size() <= 300 && s.matches('[^<>"\']*'); }
+  function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+  function only(k) { return changed().hasOnly(k); }
+  function none(k) { return !changed().hasAny(k); }
+
+  match /accounts/{uid} {
+    allow read: if signed() || resource.data.role in ['vendor','dalali'];
+    allow create: if signed() && request.auth.uid == uid && request.resource.data.role in ['customer','vendor','dalali']
+      && txt(request.resource.data.get('name','')) && txt(request.resource.data.get('shopName',''))
+      && request.resource.data.get('verified', false) == false
+      && request.resource.data.get('paidUntil', 0) <= request.time.toMillis() + 91 * 86400000;
+    allow create: if signed() && request.auth.uid == uid && isAdminEmail() && request.resource.data.role == 'admin';
+    allow update: if signed() && request.auth.uid == uid && none(['role','uid','id','pct','parentId','isApproved','suspended','paidUntil','verified'])
+      && txt(request.resource.data.get('name','')) && txt(request.resource.data.get('shopName','')) && txt(request.resource.data.get('bio',''));
+    allow update: if signed() && request.auth.uid == uid && isAdminEmail() && only(['role','isApproved']);
+    allow update: if signed() && request.auth.uid == uid && resource.data.role == 'admin' && only(['role']);
+    allow delete: if false;
+  }
+  match /private/{uid} {
+    allow read: if signed() && (request.auth.uid == uid || isAdm());
+    allow create: if signed() && request.auth.uid == uid && request.resource.data.get('walletBalance',0) == 0 && request.resource.data.get('tx',[]).size() == 0;
+    allow update: if signed() && request.auth.uid == uid && none(['walletBalance','tx','cbPaid','wd']);
+    allow delete: if false;
+  }
+  match /config/{id} { allow read: if signed(); allow write: if isAdm(); }
+  match /products/{id} {
+    allow read: if true;
+    allow create: if ver() && hasAcc() && request.resource.data.vendorId == myId() && txt(request.resource.data.get('name',''))
+      && request.resource.data.price is number && request.resource.data.price > 0 && request.resource.data.price <= 100000000
+      && request.resource.data.stock is number && request.resource.data.stock >= 0;
+    allow update: if hasAcc() && resource.data.vendorId == myId() && none(['vendorId']) && txt(request.resource.data.get('name',''))
+      && request.resource.data.price > 0 && request.resource.data.stock >= 0;
+    allow delete: if hasAcc() && resource.data.vendorId == myId();
+  }
+  match /reels/{id} {
+    allow read: if true;
+    allow create: if ver() && hasAcc() && request.resource.data.vendorId == myId() && txt(request.resource.data.get('title',''));
+    allow update: if hasAcc() && (resource.data.vendorId == myId() || only(['likes']));
+    allow delete: if hasAcc() && resource.data.vendorId == myId();
+  }
+  match /stories/{id} {
+    allow read: if true;
+    allow create: if ver() && hasAcc() && request.resource.data.ownerId == myId();
+    allow update: if hasAcc() && (resource.data.ownerId == myId() || only(['likes']));
+    allow delete: if hasAcc() && resource.data.ownerId == myId();
+  }
+  match /offers/{id} {
+    allow read: if true;
+    allow create: if ver() && hasAcc() && request.resource.data.vendorId == myId() && request.resource.data.price is number && request.resource.data.price > 0
+      && request.resource.data.endsAt is number && txt(request.resource.data.get('name',''));
+    allow update: if false;
+    allow delete: if hasAcc() && resource.data.vendorId == myId();
+  }
+  match /lives/{id} {
+    allow read: if true;
+    allow create: if ver() && hasAcc() && request.resource.data.hostId == myId();
+    allow update, delete: if hasAcc() && resource.data.hostId == myId();
+  }
+  match /liveMsgs/{id} {
+    allow read: if signed();
+    allow create, update: if hasAcc() && request.resource.data.from == myId();
+    allow delete: if hasAcc() && (resource.data.from == myId() || get(/databases/$(db)/documents/lives/$(string(resource.data.liveId))).data.hostId == myId());
+  }
+  match /liveSig/{id} {
+    allow read, delete: if hasAcc() && resource.data.to == myId();
+    allow create: if hasAcc() && request.resource.data.from == myId();
+    allow update: if false;
+  }
+  match /presence/{id} { allow read: if true; allow write: if hasAcc() && request.resource.data.id == myId(); }
+  match /chats/{id} {
+    allow read, update: if signed() && request.auth.uid in resource.data.members;
+    allow create: if signed() && request.auth.uid in request.resource.data.members;
+    allow delete: if false;
+  }
+  match /messages/{id} {
+    allow read: if signed() && request.auth.uid in resource.data.members;
+    allow create: if hasAcc() && request.auth.uid in request.resource.data.members && request.resource.data.from == myId();
+    allow update: if false;
+    allow delete: if hasAcc() && resource.data.from == myId();
+  }
+  match /orders/{id} { allow read: if signed() && request.auth.uid in [resource.data.customerUid, resource.data.vendorUid, resource.data.get('brokerUid','')]; allow write: if false; }
+  match /orderSecrets/{id} { allow read: if signed() && resource.data.customerUid == request.auth.uid; allow write: if false; }
+  match /notifs/{id} {
+    allow read: if signed() && resource.data.toUid == request.auth.uid;
+    allow create: if signed() && request.resource.data.toUid is string;
+    allow update: if signed() && resource.data.toUid == request.auth.uid && only(['read']);
+    allow delete: if signed() && resource.data.toUid == request.auth.uid;
+  }
+  match /requests/{id} {
+    allow read: if signed() && request.auth.uid in resource.data.members;
+    allow create: if hasAcc() && request.resource.data.brokerId == myId() && request.auth.uid in request.resource.data.members;
+    allow update, delete: if false;
+  }
+  match /invites/{code} {
+    allow get: if true;
+    allow list: if signed() && request.auth.uid in resource.data.members;
+    allow create: if ver() && hasAcc() && request.resource.data.vendorId == myId();
+    allow update: if hasAcc() && (resource.data.vendorId == myId() || (resource.data.status == 'invited' && only(['status','brokerId'])));
+    allow delete: if false;
+  }
+  match /ledger/{id} { allow read: if isAdm(); allow write: if false; }
+  match /security/{id} { allow create: if signed() && request.resource.data.uid == request.auth.uid; allow read, delete: if isAdm(); allow update: if false; }
+  match /complaints/{id} { allow create: if signed(); allow read, delete: if isAdm(); allow update: if false; }
+  match /reviews/{id} { allow read: if true; allow write: if false; }
+  match /feedback/{id} {
+    allow create: if signed() && request.resource.data.uid == request.auth.uid && request.resource.data.text is string && request.resource.data.text.size() <= 500 && request.resource.data.text.matches('[^<>"\']*');
+    allow read, delete: if isAdm();
+    allow update: if false;
+  }
+  match /verifications/{id} {
+    allow read: if hasAcc() && (isAdm() || resource.data.vendorId == myId());
+    allow create: if ver() && hasAcc() && request.resource.data.vendorId == myId() && request.resource.data.vendorUid == request.auth.uid && request.resource.data.status == 'pending';
+    allow update: if hasAcc() && resource.data.vendorId == myId() && request.resource.data.status == 'pending' && resource.data.status != 'approved';
+    allow delete: if isAdm();
+  }
+  match /withdrawals/{id} { allow read, write: if false; }
+  match /deposits/{id} { allow read, write: if false; }
+  match /cashback/{id} { allow read, write: if false; }
+} }

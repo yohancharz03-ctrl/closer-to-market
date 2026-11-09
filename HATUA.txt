@@ -1,0 +1,199 @@
+CLOSER MARKET - TOLEO KAMILI KWA MAJARIBIO (bila kulipa Google)
+================================================================
+Kinachofanya kazi: akaunti halisi (Firebase), maduka/bidhaa/reels/stories zinaonekana kwa wote, oda, wallet, dalali,
+ujumbe (picha, voice note, tiki), live yenye video, scanner, tahadhari ya stock, picha/video bila kikomo (Cloudinary bure).
+
+HATUA YA 1 - FIREBASE (mara moja tu)
+ a) console.firebase.google.com > mradi closer-to-market
+ b) Build > Authentication > Get started > Sign-in method > Email/Password > Enable > Save
+ c) Authentication > Settings > Authorized domains > Add domain (weka domain ya link yako, mf. jina.netlify.app)
+ d) Build > Firestore Database > Create database (hali: production, eneo lolote)
+ e) Firestore > Rules > futa vyote > bandika maudhui ya faili firestore-rules.txt > Publish
+
+HATUA YA 2 - PICHA/VIDEO BILA KIKOMO (Cloudinary, bure)
+ a) cloudinary.com > Sign up (bure)
+ b) Dashboard inaonyesha 'Cloud name' - ikumbuke
+ c) Settings (gia) > Upload > Upload presets > Add upload preset > Signing mode: UNSIGNED > Save > nakili jina la preset
+ d) Fungua public/index.html kwa Notepad/VS Code, tafuta  PASTE_CLOUD_NAME  na  PASTE_UPLOAD_PRESET  na ubadilishe
+    na thamani zako (ndani ya alama za nukuu). Hifadhi.
+ (Bila hatua hii picha zinabanwa na video haziwezi kupakiwa.)
+
+HATUA YA 3 - KUWEKA HEWANI (bila terminal)
+ a) Fungua https://app.netlify.com/drop
+ b) Buruta folda 'public' kwenye ukurasa. Utapata link. (Kuweka upya baada ya kubadilisha: buruta tena.)
+ c) Hakikisha domain ya link hiyo imewekwa kwenye Authorized domains (Hatua 1c).
+ Tuma link kwa wanaojaribu. Kila mtu aitumie kwa simu/kompyuta yake.
+
+ADMIN
+ Ingia: ctm2026@gmail.com / 123456  (inatengenezwa yenyewe mara ya kwanza; ingia mara moja ukishaweka hewani).
+ Kubadili neno la siri/akaunti: Akaunti > Mipangilio ya Admin.
+ Ukisahau: bonyeza 'Umesahau neno la siri?' kwenye ukurasa wa kuingia (barua inakuja kwenye email hiyo),
+ au Firebase Console > Authentication > Users > (dots) > Reset password.
+ Kama akaunti ya admin ilishatengenezwa kwa neno la siri lingine na hulikumbuki: Authentication > Users > ifute > ingia tena.
+
+BIDHAA ZA MAJARIBIO: ingia kama admin > Akaunti > 'Pakia Maduka/Bidhaa za Majaribio' (na 'Futa' ukimaliza).
+
+MPANGO WA MAJARIBIO NA WATU WENGI (mfano)
+ 1. Akaunti A = Muuzaji (jisajili kama Muuzaji, chagua mkoa, ruhusu eneo). Ongeza bidhaa, reel, story.
+ 2. Akaunti B = Mteja (kifaa kingine). Fuata duka la A, ona story/reel, like, weka bidhaa kikapuni (jaribu idadi + maelezo), agiza.
+ 3. A anapokea oda > 'Tuma Mzigo'; B anaona OTP kwenye Oda Zangu; A anaiweka OTP kuthibitisha > pesa zinaingia wallet ya A.
+ 4. Dalali: A > Akaunti > Madalali > '+' > tuma msimbo kwa WhatsApp. Akaunti C: Ingia > 'Nina msimbo wa Dalali'. A anathibitisha, C anaomba bidhaa, A anakubali.
+ 5. Live: A > Go Live > Anza. B anabonyeza ikoni ya LIVE kwenye soko. (Watazamaji hadi 8, video inapita moja kwa moja kati ya vifaa.)
+ 6. Ujumbe: tuma picha, voice note (🎤), angalia tiki (✓✓ bluu = amesoma).
+ 7. Stock: acha bidhaa ibaki 3 au chini > muuzaji anapata notification na kitufe cha '+ Ongeza' kwenye kichupo cha Oda.
+
+MAKOSA YANAYOJULIKANA / VIKOMO
+ - Live: video inapita kati ya vifaa moja kwa moja (WebRTC). Kwenye baadhi ya mitandao ya simu inaweza kushindwa bila seva ya TURN
+   (weka kwenye index.html, mstari wa CTM_ICE). Kwa watazamaji wengi zaidi ya 8 inahitaji huduma kama LiveKit/Agora.
+ - Simu ya sauti/video (call) bado haipo.
+ - Hii ni hali ya majaribio (rules ni wazi). KABLA ya pesa halisi: Blaze + Cloud Functions + firestore.production.rules
+   (maelekezo: badilisha USE_FN kuwa true, tumia firebase.production.json, firebase deploy).
+ - Scanner: Chrome ya Android inafanya kazi vizuri zaidi; kwa vivinjari vingine inapakia maktaba ya ziada.
+
+TOLEO LA MAKATO (V20)
+ - Cloudinary: cloud 'omycrdmb', preset 'ml_default' zimewekwa. Hakikisha preset 'ml_default' ni UNSIGNED
+   (Cloudinary > Settings > Upload > Upload presets > ml_default > Signing Mode: Unsigned), vinginevyo upakiaji utakataa.
+ - Makato: oda ikithibitishwa fika -> 5% inaenda mfuko wa CTM (Admin > Akaunti > Fedha za CTM), commission ya dalali inakatwa,
+   salio linaingia wallet ya mwenye duka.
+ - Kutoa pesa: TZS 50,000+ ni bure mara 2 kwa mwezi (CTM inalipia Selcom). Mengine yana makato (makadirio 1.5%, chini ni TZS 500;
+   badilisha kwenye v20: mstari wa 'selcom=').
+ - Cashback 4%: kila mteja anarudishiwa 4% ya manunuzi yaliyokamilika ya mwezi uliopita, mwanzoni mwa mwezi mpya.
+ - Live Offer: Akaunti > Go Live (chini ya fomu) > tengeneza offer > 🔗 shiriki. Mpokeaji anajaza jina/simu/eneo, inaingia kikapuni kwa bei ya offer.
+ - Mambo haya yanafanya kazi kwenye hali ya majaribio (hesabu ndani ya app). Kwa pesa halisi yanapaswa kuhamia Cloud Functions.
+
+KUREKEBISHA 'Upload preset must be whitelisted for unsigned uploads' (Cloudinary)
+ Preset 'ml_default' ni ya 'Signed'. Inabidi iwe 'Unsigned':
+ 1) cloudinary.com > Settings (gia chini kushoto) > Upload > Upload presets
+ 2) Bonyeza ml_default (au 'Add upload preset') > Signing mode: Unsigned > Save
+ 3) Hakuna njia ya kupakia kutoka kwenye app bila preset ya Unsigned (ufunguo wa siri hauwezi kuwekwa kwenye app).
+ Hadi irekebishwe: picha zinabanwa na zinahifadhiwa kawaida (zinaonekana kwa wote), video hazipakiwi.
+
+LINK YA KUTUMA KWA WATU: usifungue index.html kutoka kwenye folda ya muda (Temp/Rar). Toa zip kwenye folda ya kudumu,
+ kisha https://app.netlify.com/drop > buruta folda 'public' > nakili link > weka domain yake kwenye Firebase Authorized domains.
+
+TOLEO LA V21 (mapya)
+ - Live viboksi: mwenye duka bonyeza 🎤 kwenye chumba cha live > weka idadi ya viboksi (0-4). Mtazamaji bonyeza ✋ kuomba (sauti au video).
+   Mwenye duka bonyeza 'Panda' > mtu huyo anaongea na wote wanamsikia/wanamwona kwenye kisanduku kidogo. 'Shusha' kumwondoa.
+   Mtandao: video/sauti inapita moja kwa moja kati ya vifaa (WebRTC). Mitandao mingine ya simu inahitaji TURN (CTM_ICE kwenye index.html).
+ - Ramani: kwenye card ya duka bonyeza 'Angalia Ramani Halisi' > unaona ulipo, njia ya gari hadi dukani, umbali na muda (OSRM + OpenStreetMap).
+ - Story: kipete kimoja kwa duka kinachogawanyika kwa idadi ya stories. '+ Story yangu' > Picha/Video (video inachezwa hadi sekunde 60, unaona
+   ilipo kikomo kabla ya kuchapisha), muziki wa nyuma kutoka simu, au Status ya Maneno (chagua font, rangi ya maneno na mandhari).
+ - Ujumbe: bonyeza ujumbe kwa muda > Nakili / Forward / Futa (futa ni kwa ujumbe wako tu).
+ - CTM Assistance: kitufe cha 🤖 chini kulia. Ni msaidizi wa maswali ya app (hajibu maswali nje ya app).
+ - Bado: push notification ukiwa nje ya app (inahitaji Blaze/FCM), Selcom halisi, na usalama wa production.
+
+TOLEO LA V22
+ - Live: aliyepandishwa (kwa ombi la mtazamaji, bila kikomo cha awali) anaona video kamili ya mwenye duka na viboksi vya wengine.
+   Mwenye duka na aliyepandishwa wana vitufe 📷 (kamera) na 🎙 (maikrofoni); kamera ikizimwa inaonekana picha ya profile kwenye kiboksi.
+   Bonyeza kiboksi kukikuza/kukirudisha. Ombi likija mwenye duka anapata notification na ujumbe ndani ya live.
+   Mwangwi: tumia earphones wewe na aliyepandishwa (sauti sasa ina echo/noise/gain control).
+ - Story: kitufe cha kuweka story kimeondolewa sokoni; kipo Akaunti (Muuzaji) > '+ Weka Story Mpya ya Duka' tu. Ndani yake: icons 🔤 maelezo,
+   🎵 muziki (kutoka simu, chagua sekunde ya kuanza), ✂️ kata video (anza/ishia, max dakika 1), 🔊 zima sauti ya video.
+ - Bidhaa: picha na video zinaonekana kabla ya kuhifadhi; video ina vitelezi vya kuanza/kuishia.
+ - Reels: kila ukirudia reel inaanza upya; upau wa muda unaweza kuburutwa kwa kidole/mouse kwenda sehemu yoyote.
+ - Ujumbe mpya: sauti + arifa ndani ya app (na ya mfumo ukiwa tab imefichwa).
+
+================ TOLEO LA V23: USALAMA + KUWEKA KAMA APP ================
+
+KUREJESHA ADMIN WA MWANZO (ctm2026@gmail.com / 123456)
+ Njia 1 (rahisi): kwenye ukurasa wa kuingia bonyeza 'Umesahau neno la siri?', weka ctm2026@gmail.com, fungua barua pepe (angalia Spam),
+   weka neno jipya (unaweza kuweka 123456 kwa muda) kisha uingie.
+ Njia 2: Firebase Console > Authentication > Users > ctm2026@gmail.com > (⋮) > Delete account. Kisha Firestore > accounts > futa hati ya zamani ya email hiyo.
+   Ingia kwenye app kwa ctm2026@gmail.com / 123456 - akaunti ya admin inatengenezwa upya yenyewe.
+ Baada ya kuingia app inakukumbusha kubadili neno la siri (Akaunti > Mipangilio ya Admin). Badilisha MARA MOJA.
+ Ukishaweka neno la siri imara: kwenye index.html tafuta  ADMIN_AUTOCREATE=true  na ubadilishe kuwa  false.
+
+KUWEKA KAMA APP (PWA)
+ Baada ya kuweka kwenye link ya https (Netlify/Firebase Hosting):
+  - Android/Chrome: kitufe cha 'Weka CTM kwenye simu yako' kinatokea, au Menyu (⋮) > Install app.
+  - iPhone: Safari > Share > Add to Home Screen.
+  - Kompyuta (Chrome/Edge): ikoni ya kusakinisha kwenye upau wa anwani.
+  Pia Akaunti > Mipangilio > 'Weka App kwenye Simu'. Haifanyi kazi kwa file:// au http (isipokuwa localhost).
+ Mabadiliko ya app: buruta tena folda 'public' (service worker inasasisha yenyewe).
+
+USALAMA - KILICHOPO SASA (hali ya majaribio, mpango wa bure)
+ - Admin anapata notification na orodha ya matukio: Akaunti (admin) > '🛡 Usalama - Matukio'. Yanarekodiwa: jaribio la kuandika data bila ruhusa,
+   jaribio la kuingia ukurasa wa Admin.
+ - Maandishi ya majina/maelezo yanasafishwa (yasiwe na < > " ' `) kabla ya kuhifadhiwa; rules za production zinakataa pia.
+ - Netlify/Firebase Hosting: _headers / firebase.json zina X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy.
+ KIKOMO: rules za majaribio bado ni wazi (watumiaji walioingia wanaweza kuandika sehemu nyingi). Si salama kwa pesa/NIDA halisi.
+
+USALAMA KAMILI (PRODUCTION) - inahitaji mpango wa Blaze
+ 1) Firebase Console > Upgrade to Blaze (weka bajeti ya tahadhari). Washa Storage.
+ 2) Kwenye public/index.html: USE_FN=true. (USE_STORAGE=true hiari ukitaka Firebase Storage badala ya Cloudinary.)
+ 3) Terminal ndani ya ctm-deploy:
+      cd functions && npm install && cd ..
+      firebase functions:secrets:set WEBHOOK_SECRET
+      firebase deploy --config firebase.production.json
+    (hii inaweka rules kali: firestore.production.rules, functions, hosting)
+ 4) Rules za production: taarifa binafsi (NIDA, leseni, email, wallet, cart) ziko kwenye hati ya 'private' (mmiliki na admin tu);
+    oda, OTP, wallet, makato, ledger, cashback, ada, idhini - vyote vinaandikwa na Cloud Functions tu;
+    ujumbe/maombi/mialiko vinasomwa na wahusika tu; admin pekee anaona ledger na matukio ya usalama.
+ 5) HAIJAJARIBIWA kwa Firebase halisi. Jaribu kwenye mradi mpya wa majaribio kwanza (au Firebase Emulator) kabla ya kuweka pesa halisi.
+ 6) Bado inabidi baadaye: App Check (reCAPTCHA) dhidi ya programu bandia, uthibitisho wa email, na ushauri wa sheria ya ulinzi wa taarifa binafsi (NIDA).
+
+================ V24: LIVE POPOTE DUNIANI (TURN) ================
+ Live/viboksi vinatumia video kati ya vifaa moja kwa moja. Vifaa vilivyo mbali mara nyingi haviwezi kuunganishwa moja kwa moja
+ (mitandao ya simu, NAT) - vinahitaji seva ya TURN inayopitisha video.
+ 1) metered.ca > Sign up (bure) > Dashboard > TURN Server > nakili 'iceServers' (array ya JavaScript).
+ 2) Fungua public/index.html kwa Notepad/VS Code > tafuta  CUSTOM_ICE=null  > badilisha na array uliyonakili:
+      const CUSTOM_ICE=[ ... ];
+ 3) Weka tena hewani (buruta folda 'public' kwenye Netlify Drop).
+ Bila hatua hii app inajaribu TURN ya umma ya bure (openrelay) ambayo haiaminiki.
+ Vikomo: mpango wa bure wa Metered ni takriban 20GB/mwezi (video ya 500kbps ~ 225MB/saa kwa mtazamaji mmoja).
+ Mwenye duka hutuma video kwa kila mtazamaji (hadi ~8). Kwa mamia ya watazamaji inahitajika huduma ya SFU (LiveKit, Agora).
+
+================ V25 ================
+ - Chat: unafungua na kuona ujumbe wa mwisho chini; unapanda juu kusoma za zamani. Ujumbe mpya ukija ukiwa chini, unabaki chini.
+ - Ramani: haionyeshi giza tena (tiles zimerekebishwa, zoom hadi 19); kuifungua hakurudishi ukurasa juu na inabaki kwenye card ya duka.
+ - Madirisha yote ya 'confirm/prompt' ya browser yamebadilishwa na madirisha ya ndani ya app.
+ - Maoni na nyota: kila card ya duka inaonyesha ★ wastani (idadi). Bonyeza kutoa/kusoma maoni. Maoni yanaruhusiwa baada ya kununua na mzigo
+   kuthibitishwa (kwa majaribio: kwenye index.html/v25 badilisha REVIEW_NEEDS_PURCHASE kuwa false).
+ - Tuma Maoni kwa CTM: Akaunti > Mipangilio. Admin anaona: Akaunti (admin) > 'Maoni ya Watumiaji'.
+ - Trusted ✅: Muuzaji > Mipangilio > 'Thibitisha Duka' (NIDA tarakimu 20, TIN 9, leseni + picha). Admin anakagua: Akaunti (admin) >
+   'Uthibitisho wa Maduka' > Idhinisha. Duka lisilothibitishwa linaonekana kawaida bila alama.
+   KUMBUKA: NIDA/BRELA/TRA hazina API ya umma; ukaguzi wa kiotomatiki unahitaji makubaliano rasmi. Mahali pa kuunganisha pameandikwa
+   kwenye functions/index.js (autoVerify).
+ - Dalali: Akaunti > Madalali > 'Simamisha' / 'Rudisha'. Aliyesimamishwa duka lake halionekani sokoni.
+ - Live: vitufe vya 📷/🎙 vina mshale wa kuvificha.
+
+HALI YA 'REAL' ILIYO SALAMA, PESA ZA MAJARIBIO (SIMULATE_MONEY)
+ Unaweza kuanza na watu halisi huku pesa zikiwa za majaribio: fuata 'USALAMA KAMILI (PRODUCTION)' hapo juu (Blaze + USE_FN=true).
+ Katika hali hiyo wallet inaongezwa kwa 'Weka Pesa' kupitia function ya majaribio (testDeposit: hadi 500,000 kwa mara, 1,000,000 kwa siku).
+ Utakapounganisha malipo halisi: functions/.env weka SIMULATE_MONEY=false na kwenye index.html SIMULATE_MONEY=false, kisha ongeza webhook ya mtoa huduma.
+
+================ V26: KURUDI NYUMA + USALAMA ZAIDI ================
+KITUFE CHA KURUDI (simu na browser)
+ Kila ukurasa unaofungua (Angalia Bidhaa, Maoni, Akaunti, Mipangilio, chat, ramani, n.k.) unahifadhiwa kwenye historia ya browser.
+ Kitufe cha kurudi cha simu/browser au vitufe vya '←' ndani ya app vinakurudisha mahali ulipotoka, kwa nafasi ile ile ya kuscroll.
+ Madirisha (hakiki ya picha/video, maoni, story, live, scanner, mipangilio ya viboksi) yanafungwa kwanza kabla ya kurudi ukurasa.
+ Ukiwa mwenye duka kwenye live, kurudi kunakuuliza kwanza 'Maliza live?' (hakuendi mbali bila kukusudia).
+ Ukiwa ukurasa wa kwanza kabisa, kurudi kunatoka kwenye app (kawaida).
+
+USALAMA (Blaze + USE_FN=true, USE_STORAGE=true)
+ 1) Picha za leseni/vitambulisho: kwa USE_STORAGE=true zinahifadhiwa Firebase Storage binafsi (verifications/{uid}/...), mmiliki na admin tu.
+    Weka storage.rules mpya: firebase deploy --config firebase.production.json  (au Storage > Rules > bandika storage.rules > Publish).
+    (Kwa USE_STORAGE=false picha zinaenda Cloudinary na kiungo ni cha umma - si salama kwa vitambulisho.)
+ 2) Uthibitisho wa email: REQUIRE_VERIFIED_EMAIL=true (index.html na functions/.env). Mtumiaji anapata barua; anapaswa kuthibitisha
+    ili kuunda bidhaa/reels/stories/live/offers na kuagiza/kutoa pesa (rules za production + functions zinalazimisha).
+    Bango la njano juu linamkumbusha ('Tuma tena', 'Nimethibitisha').
+ 3) App Check (huzuia programu bandia kutumia Firebase yako):
+      a) console.cloud.google.com/security/recaptcha > Create key > Website > Score based (v3) > weka domain zako > nakili 'Site key'.
+      b) Firebase Console > App Check > Apps > mradi wa web > reCAPTCHA v3 > bandika Secret key > Save.
+      c) Kwenye index.html tafuta  APPCHECK_KEY=''  na uweke site key yako ndani ya nukuu. Weka tena hewani.
+      d) App Check > APIs > angalia 'Metrics' siku chache; ukiona maombi halali yanapita, bonyeza 'Enforce' kwa Firestore, Storage na Functions.
+ 4) Bado: badilisha neno la siri la admin na weka ADMIN_AUTOCREATE=false; weka kikomo na tahadhari kwenye Cloudinary/Metered.
+ 5) Mtaalamu wa usalama akague app kabla ya kuzindua rasmi; shauriana na mwanasheria kuhusu ulinzi wa taarifa binafsi (NIDA).
+
+================ V27: KUINGIA KWA GOOGLE ================
+ WASHA KWANZA (mara moja): Firebase Console > Authentication > Sign-in method > Google > Enable > weka 'Project support email' > Save.
+ Hakikisha domain ya link yako iko kwenye Authentication > Settings > Authorized domains.
+ Jinsi inavyofanya kazi:
+  - Ukurasa wa kuingia na wa kujisajili una kitufe 'Endelea na Google' juu; email/neno la siri ni chaguo la pili.
+  - Mtu mpya anayeingia kwa Google anachagua: Mteja au Mwenye Duka (jina la duka, eneo, mkoa), anaweka simu na kukubali Vigezo na Masharti.
+  - Email ya admin (ctm2026@gmail.com, au ile uliyoweka kwenye Mipangilio ya Admin) ikiingia kwa Google inakuwa Admin moja kwa moja.
+  - Aliyeshajisajili anaingia moja kwa moja na kurudi alipokuwa (admin anaenda Admin Panel).
+  - Email za Google zimethibitishwa tayari, hawaombwi kuthibitisha tena.
+  - Dalali bado anajiunga kwa msimbo wa mwaliko (email/neno la siri).
+ Kama dirisha la Google halifunguki (simu fulani/app iliyosakinishwa): app inajaribu njia ya kuhamisha ukurasa (redirect).
+ Redirect inafanya kazi vizuri zaidi kwenye anwani ya Firebase Hosting (closer-to-market.web.app); kwenye Netlify popup ndiyo inayotegemewa.
