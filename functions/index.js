@@ -3,7 +3,7 @@ const {onDocumentCreated}=require('firebase-functions/v2/firestore');
 const {onSchedule}=require('firebase-functions/v2/scheduler');
 const admin=require('firebase-admin');(process.env.FIREBASE_SERVICE_ACCOUNT?require('../netlify/lib/init')():(admin.apps.length||admin.initializeApp()));
 const db=admin.firestore(),F=admin.firestore.FieldValue,inc=F.increment,union=F.arrayUnion,DAY=864e5;
-const FEE=.05,CASHBACK=.04,SHOP_FEE=10000,WD_MIN=50000,FREE_WD=2,selcom=a=>Math.max(500,Math.round(a*.015)); // makadirio ya Selcom
+const FEE=.05,CASHBACK=.01,SHOP_FEE=10000,WD_MIN=50000,FREE_WD=2,selcom=a=>Math.max(500,Math.round(a*.015)); // makadirio ya Selcom
 const err=(c,m)=>new HttpsError(c,m),uidOf=r=>{if(!r.auth)throw err('unauthenticated','Ingia kwanza');const em=String(r.auth.token.email||'').toLowerCase();if(process.env.REQUIRE_VERIFIED_EMAIL!=='false'&&!r.auth.token.email_verified&&em!=='ctm2026@gmail.com')throw err('failed-precondition','Thibitisha email yako kwanza.');return r.auth.uid;};
 const rid=()=>Date.now()*1000+Math.floor(Math.random()*1000),P=uid=>db.doc('private/'+uid),mk=()=>new Date().toISOString().slice(0,7);
 const byId=(t,id)=>t.get(db.collection('accounts').where('id','==',+id).limit(1)).then(q=>{if(q.empty)throw err('not-found','Akaunti haipo');return q.docs[0];});
@@ -46,27 +46,27 @@ exports.confirmDelivery=onCall(async req=>{const uid=uidOf(req),{orderId,otp}=re
   return db.runTransaction(async t=>{const o=(await t.get(ref)).data(),sec=(await t.get(db.doc('orderSecrets/'+orderId))).data();
     if(!o||o.vendorUid!==uid||o.stage!==3||o.credited)throw err('failed-precondition','Oda haiko tayari kuthibitishwa');
     if(!sec||String(otp).trim()!==sec.otp)throw err('permission-denied','OTP si sahihi');
-    const v=(await t.get(db.doc('accounts/'+uid))).data(),b=o.brokerId?await byId(t,o.brokerId):null,c=(await byId(t,o.customerId)).data();
+    const v=(await t.get(db.doc('accounts/'+uid))).data(),b=o.brokerId?await byId(t,o.brokerId):null,c=(await byId(t,o.customerId)).data(),ad=await t.get(db.collection('accounts').where('role','==','admin').limit(1));
     const fee=Math.round(o.total*FEE),com=Math.min(o.commission||0,o.total-fee),net=o.total-fee-com;
     t.update(ref,{stage:4,status:'Imekamilika (Delivered)',isConfirmedByOtp:true,credited:true,fee,netToShop:net});
     t.set(P(uid),{walletBalance:inc(net),tx:union(tx('Mauzo '+o.id,net))},{merge:true});
     if(b){t.set(P(b.data().uid),{walletBalance:inc(com),tx:union(tx('Commission '+o.id,com))},{merge:true});note(t,b.data(),'Commission Imeingia',`TZS ${com.toLocaleString()} kutoka oda ${o.id}`);}
+    if(!ad.empty&&fee>0)t.set(P(ad.docs[0].id),{walletBalance:inc(fee),tx:union(tx('Mapato 5% '+o.id,fee))},{merge:true});
     led(t,'order_fee',fee,o.id,'Makato 5% oda '+o.id);
     note(t,v,'Oda Imekamilika',`Oda ${o.id}: TZS ${o.total.toLocaleString()} - makato 5% (TZS ${fee.toLocaleString()})${com?' - commission TZS '+com.toLocaleString():''} = TZS ${net.toLocaleString()} imeingia wallet.`);
     note(t,c,'Asante kwa Kununua',`Oda ${o.id} imekamilika.`);return {ok:true};});});
 
 exports.withdraw=onCall(async req=>{const uid=uidOf(req),a=Math.floor(+req.data.amount);
-  if(Date.now()/1000-req.auth.token.auth_time>300)throw err('unauthenticated','Thibitisha neno la siri tena');
   return db.runTransaction(async t=>{const m=(await me(t,uid)).data(),w=await wallet(t,uid);
-    if(!['vendor','dalali'].includes(m.role))throw err('permission-denied','Akaunti hii haiwezi kutoa pesa');
-    const key='wd_'+mk().replace('-','_'),used=w[key]||0,free=a>=WD_MIN&&used<FREE_WD,cost=selcom(a),fee=free?0:cost;
+    if(!['vendor','dalali','admin'].includes(m.role))throw err('permission-denied','Akaunti hii haiwezi kutoa pesa');
+    const fee=0;
     if(!(a>=1000)||a+fee>(w.walletBalance||0))throw err('failed-precondition','Kiasi si sahihi au salio halitoshi (makato: TZS '+fee+')');
-    t.set(P(uid),{walletBalance:inc(-(a+fee)),[key]:free?used+1:used,tx:union(tx('Withdraw'+(fee?' + makato '+fee:' (bure)'),-(a+fee)))},{merge:true});
-    if(free)led(t,'selcom_cost',-cost,uid,'CTM inalipia makato ya Selcom');else{led(t,'withdraw_fee',fee,uid,'Makato ya kutoa');led(t,'selcom_cost',-cost,uid,'Gharama ya Selcom');}
+    t.set(P(uid),{walletBalance:inc(-a),tx:union(tx('Withdraw',-a))},{merge:true});
     t.set(db.doc('withdrawals/'+rid()),{uid,accountId:m.id,phone:m.phone,amount:a,fee,status:'pending',ts:Date.now()});return {ok:true,fee};});});
 
 exports.payFee=onCall(async req=>{const uid=uidOf(req);
   return db.runTransaction(async t=>{const s=await me(t,uid),m=s.data(),w=await wallet(t,uid);if(!['vendor','dalali'].includes(m.role)||(w.walletBalance||0)<SHOP_FEE)throw err('failed-precondition','Wallet haina TZS 10,000');
+    const ad=await t.get(db.collection('accounts').where('role','==','admin').limit(1));if(!ad.empty)t.set(P(ad.docs[0].id),{walletBalance:inc(SHOP_FEE),tx:union(tx('Ada ya duka '+(m.shopName||''),SHOP_FEE))},{merge:true});
     t.set(P(uid),{walletBalance:inc(-SHOP_FEE),tx:union(tx('Ada ya duka',-SHOP_FEE))},{merge:true});t.update(s.ref,{paidUntil:Math.max(m.paidUntil||0,Date.now())+30*DAY});led(t,'shop_fee',SHOP_FEE,m.shopName,'Ada ya duka');return {ok:true};});});
 
 exports.setVendorApproval=onCall(async req=>{const uid=uidOf(req);

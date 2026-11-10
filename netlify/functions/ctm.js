@@ -16,7 +16,8 @@ function parse(t){t=String(t||'').replace(/\s+/g,' ');
   const src=(fr.split(/[:,-]/)[0]||'').trim().slice(0,30),nm=(fr.match(/(?:\s-\s*|Jina\s*:?\s*)([^*]*)$/i)||[])[1];
   const ph=(t.match(/(?:\+?255|0)[67]\d{8}/)||[])[0];
   const dt=(t.match(/\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}(?:\s+(?:saa\s+|at\s+)?\d{1,2}[:.]\d{2})?/i)||[])[0];
-  return{txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:(nm||'').replace(/^Jina\s*/i,'').replace(/[.*]+/g,'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
+  const fe=(t.match(/Ada\s+Jumla\s+(?:TZS|Tshs?)\.?\s?([\d,]+(?:\.\d+)?)/i)||[])[1];
+  return{fee:fe?Math.round(parseFloat(fe.replace(/,/g,''))):0,txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:(nm||'').replace(/^Jina\s*/i,'').replace(/[.*]+/g,'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,'').split(' ').filter(x=>x.length>2);
 const note=(t,a,title,details)=>{const id=rid();t.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Oda & Malipo',details,read:false,ts:Date.now()});};
 const led=(t,kind,amount,ref,n)=>{const id=rid();t.set(db.doc('ledger/'+id),{id,kind,amount,ref:String(ref||''),note:n||'',ts:Date.now()});};
@@ -71,12 +72,15 @@ exports.handler=async ev=>{
   if(route==='claim'){
     const p=parse(body.text);if(!p.txId||!p.amount)return R(400,{error:'Sijaelewa SMS. Bandika ujumbe mzima wa muamala.'});
     const mode=body.mode==='order'?'order':'deposit',ref=db.doc('claims/'+p.txId);
-    try{await ref.create({uid:u.uid,mode,orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],claimedAmount:p.amount,claimedName:p.name,status:'pending',ts:Date.now()});}
+    try{await ref.create({uid:u.uid,mode,orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],claimedAmount:p.amount,claimedName:p.name,fee:p.fee||0,status:'pending',ts:Date.now()});}
     catch(e){const ex=(await ref.get()).data();if(!ex||ex.uid!==u.uid||ex.status==='done')return R(409,{error:'ID hii tayari imetumika.',status:'duplicate'});
       if(['pending','short'].includes(ex.status))await ref.update({orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],mode});}
     const r=await settle(p.txId,null);return R(200,r);}
   if(route==='admin'){
     if(me.role!=='admin')return R(403,{error:'Admin tu'});const id=String(body.txId||'').toUpperCase();
+    if(body.action==='trash'||body.action==='restore'){const id=String(body.id||'').replace(/\W/g,'');
+      if(body.action==='trash'){const r=db.doc('rawSms/'+id),x=await r.get();if(!x.exists)return R(404,{error:'Haipo'});await db.doc('trash/'+id).set({col:'rawSms',data:x.data(),ts:Date.now()});await r.delete();return R(200,{ok:true});}
+      const r=db.doc('trash/'+id),x=await r.get();if(!x.exists)return R(404,{error:'Haipo'});await db.doc('rawSms/'+id).set(x.data().data);await r.delete();return R(200,{ok:true});}
     if(body.action==='reject'){await db.doc('claims/'+id).set({status:'rejected'},{merge:true});return R(200,{ok:true});}
     const c=await db.doc('claims/'+id).get();if(!c.exists)return R(404,{error:'Dai halipo'});return R(200,await settle(id,null,true));}
   return R(404,{error:'?'});};
