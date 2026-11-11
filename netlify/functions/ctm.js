@@ -61,6 +61,7 @@ exports.handler=async ev=>{
     return R(200,{ok:true,parsed:true,settled:r});}
   let u;try{u=await admin.auth().verifyIdToken(String((ev.headers.authorization||'').replace('Bearer ','')));}catch(e){return R(401,{error:'Ingia kwanza'});}
   const me=(await db.doc('accounts/'+u.uid).get()).data();if(!me)return R(403,{error:'Akaunti haipo'});
+  if(route==='push'){try{return R(200,{sent:await require('../lib/push')(db,admin)});}catch(e){return R(500,{error:e.message});}}
   if(route==='pin'){const Pn=require('../lib/pin')(db);try{
       if(body.op==='status')return R(200,await Pn.status(u.uid));
       if(body.op==='set'){await Pn.set(u.uid,body.pin,body.q,body.a,body.old);return R(200,{ok:true});}

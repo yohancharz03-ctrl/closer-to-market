@@ -1,0 +1,19 @@
+{
+ "packageId": "com.closertomarket.app",
+ "host": "closer-to-market.netlify.app",
+ "name": "Closer Market",
+ "launcherName": "CTM",
+ "display": "standalone",
+ "themeColor": "#10b981",
+ "navigationColor": "#020617",
+ "backgroundColor": "#020617",
+ "startUrl": "/?source=twa",
+ "iconUrl": "https://closer-to-market.netlify.app/icons/icon-512.png",
+ "maskableIconUrl": "https://closer-to-market.netlify.app/icons/maskable-512.png",
+ "webManifestUrl": "https://closer-to-market.netlify.app/manifest.webmanifest",
+ "enableNotifications": true,
+ "orientation": "portrait",
+ "fallbackType": "customtabs",
+ "appVersionName": "1.0.0",
+ "appVersionCode": 1
+}

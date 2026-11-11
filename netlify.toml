@@ -4,6 +4,9 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["firebase-admin", "firebase-functions"]
+[functions."push-sweep"]
+  schedule = "* * * * *"
+
 [[redirects]]
   from = "/api/fn/*"
   to = "/.netlify/functions/fn/:splat"
