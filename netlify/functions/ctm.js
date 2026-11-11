@@ -26,8 +26,9 @@ const led=(t,kind,amount,ref,n)=>{const id=rid();t.set(db.doc('ledger/'+id),{id,
 async function settle(txId,claim,force){
   return db.runTransaction(async t=>{
     const bref=db.doc('bankTx/'+txId),cref=db.doc('claims/'+txId),b=await t.get(bref),c=await t.get(cref);
-    if(!b.exists)return{status:'waiting'};const bt=b.data();if(bt.usedBy)return{status:'duplicate'};
-    const cl=c.exists?c.data():claim;if(!cl)return{status:'waiting'};if(c.exists&&cl.status==='done')return{status:'duplicate'};
+    const cl=c.exists?c.data():claim;if(!cl)return{status:'waiting'};if(!b.exists&&!force)return{status:'waiting'};
+    const manualNew=!b.exists,bt=b.exists?b.data():{amount:cl.claimedAmount||0,phone:'',name:'',src:'mkono'};
+    if(bt.usedBy||(c.exists&&cl.status==='done'))return{status:'duplicate'};
     const acc=(await t.get(db.doc('accounts/'+cl.uid))).data()||{};
     const hasId=bt.phone||norm(bt.name).length,ok=force||!hasId||(bt.phone&&acc.phone&&String(acc.phone).replace(/\D/g,'').slice(-9)===bt.phone)||norm(bt.name).some(w=>norm(acc.name).includes(w));
     if(!ok){t.set(cref,Object.assign({},cl,{status:'review',amount:bt.amount}));return{status:'review'};}
@@ -43,7 +44,7 @@ async function settle(txId,claim,force){
       ex=amt-need;led(t,'escrow_in',need,txId,'Escrow '+held.join(','));
     }
     if(ex>0){t.set(P(cl.uid),{walletBalance:inc(ex),tx:union({t:cl.mode==='order'?'Ziada ya oda':'Deposit',a:ex,n:txId,ts:Date.now()})},{merge:true});led(t,'wallet_in',ex,txId,'Wallet '+cl.uid);}
-    t.update(bref,{usedBy:cl.uid,usedAt:Date.now()});t.set(cref,Object.assign({},cl,{status:'done',amount:amt,excess:ex}));
+    manualNew?t.set(bref,Object.assign({},bt,{txId,manual:true,ts:Date.now(),usedBy:cl.uid,usedAt:Date.now()})):t.update(bref,{usedBy:cl.uid,usedAt:Date.now()});t.set(cref,Object.assign({},cl,{status:'done',amount:amt,excess:ex}));
     return{status:'done',escrow:amt-ex,wallet:ex};});}
 
 exports.handler=async ev=>{
@@ -69,6 +70,10 @@ exports.handler=async ev=>{
   if(route==='pay-info'){let total=0;const ids=(body.orderIds||[]).map(String).slice(0,20);
     for(const id of ids){const o=(await db.doc('orders/'+id).get()).data();if(o&&o.customerUid===u.uid&&o.payStatus==='PENDING')total+=o.total;}
     const cfg=(await db.doc('config/app').get()).data()||{};return R(200,{total,pay:cfg.pay||process.env.CTM_PAY||'',help:cfg.help||process.env.CTM_HELP||''});}
+  if(route==='claim'&&body.manual){const id=String(body.txId||'').toUpperCase().replace(/[^A-Z0-9.]/g,''),am=Math.round(+body.amount||0),mode=body.mode==='order'?'order':'deposit';
+    if(id.length<6||am<1)return R(400,{error:'Weka ID ya muamala na kiasi sahihi.'});const ref=db.doc('claims/'+id),ex=await ref.get();
+    if(ex.exists&&(ex.data().uid!==u.uid||ex.data().status==='done'))return R(409,{error:'ID hii tayari imetumika.',status:'duplicate'});
+    await ref.set({uid:u.uid,mode,orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],claimedAmount:am,claimedName:'',fee:0,manual:true,status:'review',ts:Date.now()},{merge:true});return R(200,{status:'review'});}
   if(route==='claim'){
     const p=parse(body.text);if(!p.txId||!p.amount)return R(400,{error:'Sijaelewa SMS. Bandika ujumbe mzima wa muamala.'});
     const mode=body.mode==='order'?'order':'deposit',ref=db.doc('claims/'+p.txId);

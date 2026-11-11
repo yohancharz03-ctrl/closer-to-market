@@ -9,3 +9,7 @@
 4. SMS Forwarder (simu ya Android ya CTM): URL `https://SITE.netlify.app/api/sms-in`, header `x-secret: SMS_SECRET`,
    JSON `{"from":"%from%","text":"%text%"}`, chuja SMS za M-PESA/Vodacom pekee, ruhusu kufanya kazi nyuma.
 5. Ingia kama admin > Akaunti > Mipangilio: "Namba za Malipo & Help", "SMS & Madai ya Malipo", "Weka Story ya CTM".
+
+## Live (LiveKit)
+- Netlify env: LIVEKIT_KEY, LIVEKIT_SECRET, LIVEKIT_URL (wss://closer-to-market-6f7j9wvm.livekit.cloud)
+- Seva `/api/lk` inatoa token; ruhusa ya kutangaza ni kwa mwenyeji wa live na wageni waliopandishwa tu.
