@@ -1,0 +1,61 @@
+CLOSER MARKET - TOLEO V35 (Mfumo wa Ada: VIP / Lipa Kidogo + Arifa zenye Sauti)
+===============================================================================
+
+1) MFUMO MPYA WA ADA YA USAJILI (TZS 10,000)
+ - Wenye maduka wanaanza BURE. Wakati wa kujisajili (email au Google) wanaona chaguo mbili:
+     a) "Anza bure - Lipa Kidogo": 5% ya kila mauzo yaliyokamilika (OTP imethibitishwa) inakatwa kiotomatiki hadi deni la 10,000 liishe.
+        Kisha hali inakuwa Fully Paid na wanapata 100% ya mauzo.
+     b) "Lipa TZS 10,000 moja kwa moja": inafunguka dirisha la malipo lenye NAMBA YA MALIPO YA CTM (M-Pesa/Tigo/Airtel/Halo),
+        mtu anabandika SMS au anatuma Transaction ID. Admin anapata notification, anaidhinisha, na hali inakuwa Fully Paid.
+ - VIP: maduka 10 ya KWANZA kujisajili baada ya toleo hili yanakuwa VIP/Free moja kwa moja (bila deni, bila 5%), bila kujali chaguo lao.
+   Hesabu inatunzwa kwenye Firestore: config/vip { count }. (Kuanza upya VIP: futa/hariri hati hiyo kwenye Firebase Console.)
+ - Sehemu mpya kwenye akaunti ya duka (zinaandikwa na server tu, rules zinazilinda):
+     registrationDebt, totalPaidTowardDebt, paymentStatus ('vip' | 'lipa_kidogo' | 'pending_direct' | 'fully_paid'), feePlan, vipNo
+ - Mwenye duka anaona kadi ya hali kwenye kichupo cha Oda: VIP / Lipa Kidogo (Deni limesalia TZS X + upau wa maendeleo) / Fully Paid.
+   Anaweza kubadili kati ya "moja kwa moja" na "Lipa Kidogo" kabla ya kumaliza kulipa.
+ - Kila mauzo yanapokamilika, mwenye duka anapata notification: kiasi kilichoingia Wallet + makato ya usajili + deni lililosalia.
+   Deni likiisha, yeye na Admin wanapata notification ya "Fully Paid".
+ - Admin: kwenye orodha ya maduka kila duka lina beji ya hali (VIP / Lipa Kidogo - Deni limesalia... / Fully Paid / Anasubiri kulipa).
+ - Akaunti za ZAMANI (zisizo na paymentStatus) zinaendelea kama kawaida: 5% kwa kila oda + ada ya mwezi 10,000.
+
+2) KITUFE CHA "LIPA ADA" SASA KINALETA NAMBA YA MALIPO
+ - Kinafungua chaguo: "Lipa kwa Namba ya Malipo" au "Lipa kutoka Wallet".
+ - Namba ya malipo = ile ile ya Admin (Akaunti > Mipangilio > Namba za Malipo & Help).
+ - Mtu akituma, dai linaingia kama "Ada ya duka" (mode 'fee') kwenye Admin > SMS & Madai ya Malipo, na Admin anapata notification
+   "Dai la Malipo ya Ada ya Duka". Admin akibonyeza Idhinisha: deni linapungua / muda wa duka unaongezeka siku 30 (akaunti za zamani),
+   mwenye duka anapata notification, na Admin anapata taarifa ya malipo kukubaliwa. SMS ikilingana na ID ya muamala (Transaction ID)
+   inathibitika yenyewe bila Admin.
+
+3) SAUTI KWENYE NOTIFICATION NA UJUMBE WOTE
+ - Kila notification mpya (oda, malipo, ada, maoni, usalama...) na kila ujumbe mpya unatoa SAUTI (sauti inatengenezwa na app,
+   haitegemei faili la nje) + mtetemo kwenye simu.
+ - Kivinjari kinazuia sauti hadi mtu aguse skrini mara moja; app inaifungua kiotomatiki kwa mguso wa kwanza.
+
+4) ARIFA ZA NJE ZINAKUJA KWA PROFILE YAKE (si ujumbe wa kawaida wa browser)
+ - App ikiwa wazi: bango la ndani lenye rangi/ikoni ya kategoria (📦 Oda, 💬 Ujumbe, 💰 Malipo, 🏪 Usajili & Ada, ⭐ Huduma, 🛡 Usalama).
+   Hakuna tena dirisha la "ctm inasema...". Kubonyeza bango kunafungua ukurasa husika.
+ - App ikiwa nyuma/imefungwa: arifa ya mfumo yenye kichwa cha kategoria (mf. "📦 Oda • Oda Mpya"), sauti, mtetemo, na ikibonyezwa
+   inafungua ukurasa sahihi (oda -> Oda, ujumbe -> chat husika, mengine -> Akaunti). Arifa za chat moja zinaungana kwa tag.
+ - Ukurasa wa Taarifa & Arifa unaonyesha beji ya kategoria kwa kila notification.
+ - Arifa za nyuma (app imefungwa) zinahitaji FCM/VAPID key ilivyoelezwa kwenye HATUA.txt (Akaunti admin > Namba za Malipo & Help > Web Push key)
+   na mtumiaji ruhusu notifications. Seva sasa inatuma ujumbe wa aina "data-only" ili service worker ionyeshe arifa moja yenye profile.
+
+KUWEKA HEWANI (Netlify + Firebase)
+ 1. Weka folda hii kwenye GitHub/Netlify kama ilivyo kwenye README-MALIPO.md (publish: public, functions: netlify/functions).
+ 2. Firebase Console > Firestore > Rules: bandika firestore.production.rules mpya > Publish
+    (inalinda sehemu mpya za ada ziandikwe na server tu).
+ 3. Hakuna env mpya. Tumia FIREBASE_SERVICE_ACCOUNT, SMS_SECRET zilezile.
+ 4. Kwa watumiaji waliokuwa na app: service worker inasasisha yenyewe (cache ctm-v35). Funga na ufungue app mara mbili.
+
+JARIBIO LA HARAKA
+ - Jisajili kama muuzaji wa 1-10: utaona "Hongera! Duka lako ni VIP".
+ - Muuzaji wa 11+: chagua Lipa Kidogo -> kamilisha oda (OTP) -> notification inaonyesha makato na deni lililosalia.
+ - Chagua "moja kwa moja" -> dirisha la Namba ya Malipo -> tuma Transaction ID -> Admin anapata notification -> Idhinisha -> Fully Paid.
+
+KUMBUKA / VIKOMO
+ - Sijaweza kuendesha app kwenye Firebase halisi hapa. Mantiki ya malipo ya ada (settle) nimeijaribu kwa hifadhidata bandia
+   (deni 10,000 -> malipo 4,000 -> 6,000 -> malipo 7,000 = Fully Paid + ziada 1,000 kwenye wallet) na mantiki ya notification kwa DOM bandia.
+   Jaribu kwenye mradi wa majaribio kabla ya kutumia pesa halisi.
+ - Sauti ya arifa ukiwa nje ya app inategemea mipangilio ya simu (Do Not Disturb, channel ya Chrome/Android).
+ - Makato 5% sasa yanaelekezwa kulipa deni la usajili (si mapato ya CTM) kwa maduka ya Lipa Kidogo; VIP/Fully Paid hawakatwi.
+   Akaunti za zamani zinaendelea kukatwa 5% kama awali.

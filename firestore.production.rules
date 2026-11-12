@@ -19,9 +19,10 @@ service cloud.firestore { match /databases/{db}/documents {
     allow create: if signed() && request.auth.uid == uid && request.resource.data.role in ['customer','vendor','dalali']
       && txt(request.resource.data.get('name','')) && txt(request.resource.data.get('shopName',''))
       && request.resource.data.get('verified', false) == false
+      && !request.resource.data.keys().hasAny(['paymentStatus','registrationDebt','totalPaidTowardDebt','feePlan','vipNo'])
       && request.resource.data.get('paidUntil', 0) <= request.time.toMillis() + 91 * 86400000;
     allow create: if signed() && request.auth.uid == uid && isAdminEmail() && request.resource.data.role == 'admin';
-    allow update: if signed() && request.auth.uid == uid && none(['role','uid','id','pct','parentId','isApproved','suspended','paidUntil','verified'])
+    allow update: if signed() && request.auth.uid == uid && none(['role','uid','id','pct','parentId','isApproved','suspended','paidUntil','verified','paymentStatus','registrationDebt','totalPaidTowardDebt','feePlan','vipNo'])
       && txt(request.resource.data.get('name','')) && txt(request.resource.data.get('shopName','')) && txt(request.resource.data.get('bio',''));
     allow update: if signed() && request.auth.uid == uid && isAdminEmail() && only(['role','isApproved']);
     allow update: if signed() && request.auth.uid == uid && resource.data.role == 'admin' && only(['role']);

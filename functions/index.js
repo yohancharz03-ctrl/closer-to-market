@@ -3,7 +3,7 @@ const {onDocumentCreated}=require('firebase-functions/v2/firestore');
 const {onSchedule}=require('firebase-functions/v2/scheduler');
 const admin=require('firebase-admin');(process.env.FIREBASE_SERVICE_ACCOUNT?require('../netlify/lib/init')():(admin.apps.length||admin.initializeApp()));
 const db=admin.firestore(),F=admin.firestore.FieldValue,inc=F.increment,union=F.arrayUnion,DAY=864e5;
-const FEE=.05,CASHBACK=.01,SHOP_FEE=10000,WD_MIN=50000,FREE_WD=2,selcom=a=>Math.max(500,Math.round(a*.015)); // makadirio ya Selcom
+const FEE=.05,CASHBACK=.01,SHOP_FEE=10000,VIP_SLOTS=10,FAR=()=>Date.now()+3650*864e5,WD_MIN=50000,FREE_WD=2,selcom=a=>Math.max(500,Math.round(a*.015)); // makadirio ya Selcom
 const err=(c,m)=>new HttpsError(c,m),uidOf=r=>{if(!r.auth)throw err('unauthenticated','Ingia kwanza');const em=String(r.auth.token.email||'').toLowerCase();if(process.env.REQUIRE_VERIFIED_EMAIL!=='false'&&!r.auth.token.email_verified&&em!=='ctm2026@gmail.com')throw err('failed-precondition','Thibitisha email yako kwanza.');return r.auth.uid;};
 const rid=()=>Date.now()*1000+Math.floor(Math.random()*1000),P=uid=>db.doc('private/'+uid),mk=()=>new Date().toISOString().slice(0,7);
 const byId=(t,id)=>t.get(db.collection('accounts').where('id','==',+id).limit(1)).then(q=>{if(q.empty)throw err('not-found','Akaunti haipo');return q.docs[0];});
@@ -47,13 +47,20 @@ exports.confirmDelivery=onCall(async req=>{const uid=uidOf(req),{orderId,otp}=re
     if(!o||o.vendorUid!==uid||o.stage!==3||o.credited)throw err('failed-precondition','Oda haiko tayari kuthibitishwa');
     if(!sec||String(otp).trim()!==sec.otp)throw err('permission-denied','OTP si sahihi');
     const v=(await t.get(db.doc('accounts/'+uid))).data(),b=o.brokerId?await byId(t,o.brokerId):null,c=(await byId(t,o.customerId)).data(),ad=await t.get(db.collection('accounts').where('role','==','admin').limit(1));
-    const fee=Math.round(o.total*FEE),com=Math.min(o.commission||0,o.total-fee),net=o.total-fee-com;
+    /* Mfumo mpya wa ada: VIP / Fully Paid = hakuna makato (100%); Lipa Kidogo = 5% inakatwa kulipa deni la usajili hadi liishe; pending_direct = hakuna makato (analipa moja kwa moja). Akaunti za zamani (bila paymentStatus) = 5% kama kawaida. */
+    const ps=v.paymentStatus,debt0=Math.max(0,v.registrationDebt||0);let fee=Math.round(o.total*FEE),debtCut=0,debtLeft=null,nowPaid=false;
+    if(ps==='vip'||ps==='fully_paid'||ps==='pending_direct')fee=0;
+    else if(ps==='lipa_kidogo'){fee=Math.min(fee,debt0);debtCut=fee;debtLeft=debt0-debtCut;nowPaid=debtLeft<=0;}
+    const com=Math.min(o.commission||0,o.total-fee),net=o.total-fee-com;
     t.update(ref,{stage:4,status:'Imekamilika (Delivered)',isConfirmedByOtp:true,credited:true,fee,netToShop:net});
+    if(debtCut>0)t.update(db.doc('accounts/'+uid),{registrationDebt:debtLeft,totalPaidTowardDebt:inc(debtCut),paymentStatus:nowPaid?'fully_paid':'lipa_kidogo'});
     t.set(P(uid),{walletBalance:inc(net),tx:union(tx('Mauzo '+o.id,net))},{merge:true});
     if(b){t.set(P(b.data().uid),{walletBalance:inc(com),tx:union(tx('Commission '+o.id,com))},{merge:true});note(t,b.data(),'Commission Imeingia',`TZS ${com.toLocaleString()} kutoka oda ${o.id}`);}
     if(!ad.empty&&fee>0)t.set(P(ad.docs[0].id),{walletBalance:inc(fee),tx:union(tx('Mapato 5% '+o.id,fee))},{merge:true});
-    led(t,'order_fee',fee,o.id,'Makato 5% oda '+o.id);
-    note(t,v,'Oda Imekamilika',`Oda ${o.id}: TZS ${o.total.toLocaleString()} - makato 5% (TZS ${fee.toLocaleString()})${com?' - commission TZS '+com.toLocaleString():''} = TZS ${net.toLocaleString()} imeingia wallet.`);
+    if(fee>0)led(t,'order_fee',fee,o.id,(debtCut?'Makato 5% kulipa deni la usajili - ':'Makato 5% oda ')+o.id);
+    const debtTxt=debtCut?` Makato ya usajili (5%): TZS ${debtCut.toLocaleString()}. ${nowPaid?'Deni lako limekwisha - sasa unapata 100% ya mauzo!':'Deni limesalia TZS '+debtLeft.toLocaleString()+'.'}`:(fee>0?` Makato 5%: TZS ${fee.toLocaleString()}.`:'');
+    note(t,v,'Oda Imekamilika',`Oda ${o.id}: TZS ${o.total.toLocaleString()}.${debtTxt}${com?' Commission TZS '+com.toLocaleString()+'.':''} TZS ${net.toLocaleString()} imeingia kwenye Wallet yako.`);
+    if(nowPaid&&!ad.empty)note(t,ad.docs[0].data(),'Duka Limemaliza Deni la Usajili',`${v.shopName} amemaliza deni la usajili (TZS ${SHOP_FEE.toLocaleString()}) kupitia makato 5%. Hali: Fully Paid.`,'Usajili');
     note(t,c,'Asante kwa Kununua',`Oda ${o.id} imekamilika.`);return {ok:true};});});
 
 exports.withdraw=onCall(async req=>{const uid=uidOf(req),a=Math.floor(+req.data.amount);
@@ -65,9 +72,36 @@ exports.withdraw=onCall(async req=>{const uid=uidOf(req),a=Math.floor(+req.data.
     t.set(db.doc('withdrawals/'+rid()),{uid,accountId:m.id,phone:m.phone,amount:a,fee,status:'pending',ts:Date.now()});return {ok:true,fee};});});
 
 exports.payFee=onCall(async req=>{const uid=uidOf(req);
-  return db.runTransaction(async t=>{const s=await me(t,uid),m=s.data(),w=await wallet(t,uid);if(!['vendor','dalali'].includes(m.role)||(w.walletBalance||0)<SHOP_FEE)throw err('failed-precondition','Wallet haina TZS 10,000');
-    const ad=await t.get(db.collection('accounts').where('role','==','admin').limit(1));if(!ad.empty)t.set(P(ad.docs[0].id),{walletBalance:inc(SHOP_FEE),tx:union(tx('Ada ya duka '+(m.shopName||''),SHOP_FEE))},{merge:true});
-    t.set(P(uid),{walletBalance:inc(-SHOP_FEE),tx:union(tx('Ada ya duka',-SHOP_FEE))},{merge:true});t.update(s.ref,{paidUntil:Math.max(m.paidUntil||0,Date.now())+30*DAY});led(t,'shop_fee',SHOP_FEE,m.shopName,'Ada ya duka');return {ok:true};});});
+  return db.runTransaction(async t=>{const s=await me(t,uid),m=s.data(),w=await wallet(t,uid),bal=w.walletBalance||0;
+    if(!['vendor','dalali'].includes(m.role))throw err('failed-precondition','Akaunti hii haina ada ya duka');
+    const ad=await t.get(db.collection('accounts').where('role','==','admin').limit(1)),debt=m.registrationDebt||0,st=m.paymentStatus;
+    if(['pending_direct','lipa_kidogo'].includes(st)&&debt>0){ // lipa deni la usajili kutoka wallet
+      const use=Math.min(bal,debt);if(use<1)throw err('failed-precondition','Wallet haina fedha. Tumia Namba ya Malipo.');const nd=debt-use;
+      t.set(P(uid),{walletBalance:inc(-use),tx:union(tx('Deni la usajili',-use))},{merge:true});
+      t.update(s.ref,{registrationDebt:nd,totalPaidTowardDebt:inc(use),paymentStatus:nd<=0?'fully_paid':st,...(nd<=0?{paidUntil:FAR()}:{})});
+      if(!ad.empty){t.set(P(ad.docs[0].id),{walletBalance:inc(use),tx:union(tx('Ada ya usajili '+(m.shopName||''),use))},{merge:true});note(t,ad.docs[0].data(),'Ada ya Usajili Imelipwa',`${m.shopName} amelipa TZS ${use.toLocaleString()} (wallet). ${nd<=0?'Hali: Fully Paid.':'Deni limesalia TZS '+nd.toLocaleString()+'.'}`,'Usajili');}
+      led(t,'shop_fee',use,m.shopName,'Ada ya usajili (wallet)');note(t,m,'Malipo ya Usajili',nd<=0?'Hongera! Deni limekwisha. Sasa unapata 100% ya mauzo yako.':`Umelipa TZS ${use.toLocaleString()}. Deni limesalia TZS ${nd.toLocaleString()}.`,'Usajili');return {ok:true,debtLeft:nd};}
+    if(bal<SHOP_FEE)throw err('failed-precondition','Wallet haina TZS 10,000');
+    if(!ad.empty)t.set(P(ad.docs[0].id),{walletBalance:inc(SHOP_FEE),tx:union(tx('Ada ya duka '+(m.shopName||''),SHOP_FEE))},{merge:true});
+    t.set(P(uid),{walletBalance:inc(-SHOP_FEE),tx:union(tx('Ada ya duka',-SHOP_FEE))},{merge:true});t.update(s.ref,{paidUntil:Math.max(m.paidUntil||0,Date.now())+30*DAY});led(t,'shop_fee',SHOP_FEE,m.shopName,'Ada ya duka');
+    if(!ad.empty)note(t,ad.docs[0].data(),'Ada ya Mwezi Imelipwa',`${m.shopName} amelipa TZS 10,000 (wallet). Muda umeongezwa siku 30.`,'Usajili');return {ok:true};});});
+
+/* Mpango wa ada wakati wa kujisajili: maduka 10 ya kwanza = VIP (bure, bila deni na bila 5%). Wengine: 'direct' (lipa TZS 10,000 moja kwa moja) au 'cut' (Lipa Kidogo: 5% ya kila mauzo hadi deni liishe). Haihitaji email ithibitishwe ili mpango upatikane mara moja. */
+exports.setFeePlan=onCall(async req=>{if(!req.auth)throw err('unauthenticated','Ingia kwanza');const uid=req.auth.uid,plan=(req.data||{}).plan==='direct'?'direct':'cut';
+  return db.runTransaction(async t=>{const s=await me(t,uid),m=s.data();if(m.role!=='vendor')throw err('failed-precondition','Mpango huu ni kwa wenye maduka tu');
+    const st=m.paymentStatus,cr=db.doc('config/vip'),c=await t.get(cr),n=(c.exists&&c.data().count)||0,ad=await t.get(db.collection('accounts').where('role','==','admin').limit(1)),adm=ad.empty?null:ad.docs[0].data();
+    if(st==='vip'||st==='fully_paid')return {status:st,debt:0,vipNo:m.vipNo||0};
+    if(st&&st!==''){ // anaweza kubadili kati ya direct <-> cut kabla hajamaliza kulipa
+      const to=plan==='direct'?'pending_direct':'lipa_kidogo';if(to!==st&&(m.registrationDebt||0)>0){t.update(s.ref,{paymentStatus:to,feePlan:plan});return {status:to,debt:m.registrationDebt||0};}
+      return {status:st,debt:m.registrationDebt||0};}
+    if(n<VIP_SLOTS){t.set(cr,{count:n+1},{merge:true});t.update(s.ref,{paymentStatus:'vip',feePlan:'vip',vipNo:n+1,registrationDebt:0,totalPaidTowardDebt:0,paidUntil:FAR()});
+      note(t,m,'Karibu VIP! 🌟',`Duka lako ni VIP namba ${n+1} kati ya ${VIP_SLOTS}: hakuna ada ya usajili wala makato ya 5%.`,'Usajili');
+      if(adm)note(t,adm,'Duka la VIP Limejiunga',`${m.shopName} (${m.name}) ni VIP namba ${n+1}/${VIP_SLOTS}.`,'Usajili');return {status:'vip',debt:0,vipNo:n+1};}
+    const status=plan==='direct'?'pending_direct':'lipa_kidogo',upd={paymentStatus:status,feePlan:plan,registrationDebt:SHOP_FEE,totalPaidTowardDebt:0};if(plan==='cut')upd.paidUntil=FAR();
+    t.update(s.ref,upd);
+    note(t,m,plan==='cut'?'Umechagua Lipa Kidogo':'Lipa Ada ya Usajili',plan==='cut'?`Unaanza bure. 5% ya kila mauzo itakatwa hadi deni la TZS ${SHOP_FEE.toLocaleString()} litakapoisha.`:`Ada ya usajili ni TZS ${SHOP_FEE.toLocaleString()}. Lipa kupitia Namba ya Malipo ili Admin athibitishe.`,'Usajili');
+    if(adm)note(t,adm,'Muuzaji Mpya - '+(plan==='cut'?'Lipa Kidogo':'Lipa Moja kwa Moja'),`${m.shopName} (${m.name}) amechagua ${plan==='cut'?'kukatwa 5% hadi deni la TZS 10,000 liishe':'kulipa TZS 10,000 moja kwa moja'}.`,'Usajili');
+    return {status,debt:SHOP_FEE};});});
 
 exports.setVendorApproval=onCall(async req=>{const uid=uidOf(req);
   return db.runTransaction(async t=>{if((await me(t,uid)).data().role!=='admin')throw err('permission-denied','Admin tu');
@@ -104,7 +138,8 @@ exports.monthlyCashback=onSchedule({schedule:'0 3 1 * *',timeZone:'Africa/Dar_es
 
 exports.pushOnNotif=onDocumentCreated('notifs/{id}',async ev=>{const n=ev.data.data();if(!n.toUid)return;
   const a=(await P(n.toUid).get()).data(),tokens=(a&&a.fcmTokens)||[];if(!tokens.length)return;
-  await admin.messaging().sendEachForMulticast({tokens,notification:{title:n.title,body:String(n.details||'').replace(/<[^>]*>/g,'').slice(0,160)}});});
+  const x=(String(n.category||'')+' '+String(n.title||'')).toLowerCase(),k=/ujumbe|chat/.test(x)?'ujumbe':/oda|order|mzigo|escrow/.test(x)?'oda':/usalama|tahadhari/.test(x)?'usalama':/ada |ada$|usajili|deni|vip|duka/.test(x)?'usajili':/malipo|wallet|commission|cashback|pesa/.test(x)?'malipo':/huduma|maoni/.test(x)?'huduma':'mengine';
+  await admin.messaging().sendEachForMulticast({tokens,data:{title:String(n.title||'Closer Market').slice(0,80),body:String(n.details||'').replace(/<[^>]*>/g,'').slice(0,160),kind:k,tag:'ctm-'+k+'-'+String(n.id||'')},android:{priority:'high'},webpush:{headers:{Urgency:'high',TTL:'86400'},fcmOptions:{link:'/'}}});});
 
 /* Tukio la usalama -> notification kwa kila admin (na push) */
 exports.securityAlert=onDocumentCreated('security/{id}',async ev=>{const s=ev.data.data(),ads=await db.collection('accounts').where('role','==','admin').get();

@@ -1,6 +1,6 @@
 /* CTM Trust-Flow: seva ya malipo (Netlify Function). Njia:
    POST /api/sms-in   (Forwarder, header x-secret)  -> inahifadhi SMS halisi ya CTM
-   POST /api/claim    (mteja, Bearer idToken)       -> {text, mode:'deposit'|'order', orderIds:[]}
+   POST /api/claim    (mteja, Bearer idToken)       -> {text, mode:'deposit'|'order'|'fee', orderIds:[]}  (fee = ada ya duka/deni la usajili)
    POST /api/admin    (admin, Bearer idToken)       -> {action:'approve'|'reject', txId}
    Env: FIREBASE_SERVICE_ACCOUNT (JSON), SMS_SECRET */
 const admin=require('firebase-admin'),init=require('../lib/init');let db,inc,union;
@@ -20,6 +20,10 @@ function parse(t){t=String(t||'').replace(/\s+/g,' ');
   return{fee:fe?Math.round(parseFloat(fe.replace(/,/g,''))):0,txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:(nm||'').replace(/^Jina\s*/i,'').replace(/[.*]+/g,'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,'').split(' ').filter(x=>x.length>2);
 const note=(t,a,title,details)=>{const id=rid();t.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Oda & Malipo',details,read:false,ts:Date.now()});};
+const SHOP_FEE=10000,DAY=864e5;
+async function notifyAdmins(title,details){const q=await db.collection('accounts').where('role','==','admin').get(),b=db.batch();
+  q.forEach(d=>{const a=d.data(),id=rid();b.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Usajili',details,read:false,ts:Date.now()});});await b.commit();}
+const feeLabel=async uid=>{const a=(await db.doc('accounts/'+uid).get()).data()||{};return (a.shopName||a.name||'Duka')+' ('+(a.name||'')+')';};
 const led=(t,kind,amount,ref,n)=>{const id=rid();t.set(db.doc('ledger/'+id),{id,kind,amount,ref:String(ref||''),note:n||'',ts:Date.now()});};
 
 /* Hesabu ya Ledger: tx ya kweli (bankTx) ndiyo chanzo cha kiasi, si maandishi ya mteja. */
@@ -32,7 +36,7 @@ async function settle(txId,claim,force){
     const acc=(await t.get(db.doc('accounts/'+cl.uid))).data()||{};
     const hasId=bt.phone||norm(bt.name).length,ok=force||!hasId||(bt.phone&&acc.phone&&String(acc.phone).replace(/\D/g,'').slice(-9)===bt.phone)||norm(bt.name).some(w=>norm(acc.name).includes(w));
     if(!ok){t.set(cref,Object.assign({},cl,{status:'review',amount:bt.amount}));return{status:'review'};}
-    const amt=bt.amount;let ex=amt,held=[];
+    const amt=bt.amount;let ex=amt,held=[];held.fee=0;
     if(cl.mode==='order'){
       const os=await Promise.all((cl.orderIds||[]).slice(0,20).map(id=>t.get(db.doc('orders/'+id))));
       const list=os.filter(s=>s.exists&&s.data().customerUid===cl.uid&&s.data().payStatus==='PENDING');
@@ -43,9 +47,21 @@ async function settle(txId,claim,force){
         note(t,{id:o.vendorId,uid:o.vendorUid},'Oda Imelipiwa Kikamilifu',`Oda ${o.id} imelipiwa na kuhakikiwa na Ledger. Tafadhali anza kuandaa mzigo!`);held.push(o.id);});
       ex=amt-need;led(t,'escrow_in',need,txId,'Escrow '+held.join(','));
     }
-    if(ex>0){t.set(P(cl.uid),{walletBalance:inc(ex),tx:union({t:cl.mode==='order'?'Ziada ya oda':'Deposit',a:ex,n:txId,ts:Date.now()})},{merge:true});led(t,'wallet_in',ex,txId,'Wallet '+cl.uid);}
+    if(cl.mode==='fee'){ // ADA YA DUKA: deni la usajili (pending_direct / lipa_kidogo) au ada ya mwezi (akaunti za zamani)
+      const ads=await t.get(db.collection('accounts').where('role','==','admin')),st=acc.paymentStatus,debt=Math.max(0,acc.registrationDebt||0),aref=db.doc('accounts/'+cl.uid);
+      let use=0,upd,msgV,debtLeft=null,nowPaid=false;
+      if(['pending_direct','lipa_kidogo'].includes(st)&&debt>0){use=Math.min(amt,debt);debtLeft=debt-use;nowPaid=debtLeft<=0;
+        upd={registrationDebt:debtLeft,totalPaidTowardDebt:inc(use)};if(nowPaid){upd.paymentStatus='fully_paid';upd.paidUntil=Date.now()+3650*DAY;}
+        msgV=nowPaid?'Malipo yamekubaliwa. Deni la usajili limekwisha - sasa unapata 100% ya mauzo yako (Fully Paid).':`Malipo ya TZS ${use.toLocaleString()} yamekubaliwa. Deni limesalia TZS ${debtLeft.toLocaleString()}.`;}
+      else{const months=force?Math.max(1,Math.floor(amt/SHOP_FEE)):Math.floor(amt/SHOP_FEE);if(months<1){t.set(cref,Object.assign({},cl,{status:'short',amount:amt,need:SHOP_FEE}));return{status:'short',need:SHOP_FEE,amount:amt};}
+        use=Math.min(amt,months*SHOP_FEE);upd={paidUntil:Math.max(acc.paidUntil||0,Date.now())+30*DAY*months};msgV=`Malipo ya ada ya mwezi yamekubaliwa. Duka lako limeongezewa siku ${30*months}.`;}
+      ex=amt-use;t.update(aref,upd);led(t,'shop_fee',use,txId,'Ada ya duka - '+(acc.shopName||cl.uid));
+      note(t,{id:acc.id,uid:cl.uid},nowPaid?'Deni la Usajili Limekwisha ✅':'Ada Imepokelewa',msgV);
+      ads.forEach(d=>note(t,d.data(),'Malipo ya Ada ya Duka Yamekubaliwa',`${acc.shopName||acc.name} amelipa TZS ${use.toLocaleString()} (Muamala ${txId}).${debtLeft!==null?(nowPaid?' Hali: Fully Paid.':' Deni limesalia TZS '+debtLeft.toLocaleString()+'.'):' Muda umeongezwa.'}`));
+      held.fee=use;}
+    if(ex>0){t.set(P(cl.uid),{walletBalance:inc(ex),tx:union({t:cl.mode==='order'?'Ziada ya oda':cl.mode==='fee'?'Ziada ya ada':'Deposit',a:ex,n:txId,ts:Date.now()})},{merge:true});led(t,'wallet_in',ex,txId,'Wallet '+cl.uid);}
     manualNew?t.set(bref,Object.assign({},bt,{txId,manual:true,ts:Date.now(),usedBy:cl.uid,usedAt:Date.now()})):t.update(bref,{usedBy:cl.uid,usedAt:Date.now()});t.set(cref,Object.assign({},cl,{status:'done',amount:amt,excess:ex}));
-    return{status:'done',escrow:amt-ex,wallet:ex};});}
+    return{status:'done',escrow:cl.mode==='order'?amt-ex:0,fee:held.fee||0,wallet:ex};});}
 
 exports.handler=async ev=>{
   try{init();}catch(e){return R(500,{error:'Seva: '+e.message});}db=admin.firestore();inc=admin.firestore.FieldValue.increment;union=admin.firestore.FieldValue.arrayUnion;
@@ -71,17 +87,21 @@ exports.handler=async ev=>{
   if(route==='pay-info'){let total=0;const ids=(body.orderIds||[]).map(String).slice(0,20);
     for(const id of ids){const o=(await db.doc('orders/'+id).get()).data();if(o&&o.customerUid===u.uid&&o.payStatus==='PENDING')total+=o.total;}
     const cfg=(await db.doc('config/app').get()).data()||{};return R(200,{total,pay:cfg.pay||process.env.CTM_PAY||'',help:cfg.help||process.env.CTM_HELP||''});}
-  if(route==='claim'&&body.manual){const id=String(body.txId||'').toUpperCase().replace(/[^A-Z0-9.]/g,''),am=Math.round(+body.amount||0),mode=body.mode==='order'?'order':'deposit';
+  if(route==='claim'&&body.manual){const id=String(body.txId||'').toUpperCase().replace(/[^A-Z0-9.]/g,''),am=Math.round(+body.amount||0),mode=['order','fee'].includes(body.mode)?body.mode:'deposit';
     if(id.length<6||am<1)return R(400,{error:'Weka ID ya muamala na kiasi sahihi.'});const ref=db.doc('claims/'+id),ex=await ref.get();
     if(ex.exists&&(ex.data().uid!==u.uid||ex.data().status==='done'))return R(409,{error:'ID hii tayari imetumika.',status:'duplicate'});
-    await ref.set({uid:u.uid,mode,orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],claimedAmount:am,claimedName:'',fee:0,manual:true,status:'review',ts:Date.now()},{merge:true});return R(200,{status:'review'});}
+    await ref.set({uid:u.uid,mode,orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],claimedAmount:am,claimedName:'',fee:0,manual:true,status:'review',ts:Date.now()},{merge:true});
+    if(mode==='fee')await notifyAdmins('Dai la Malipo ya Ada ya Duka',`${await feeLabel(u.uid)} anadai amelipa TZS ${am.toLocaleString()} (Muamala ${id}). Fungua Akaunti > SMS & Madai ya Malipo > Idhinisha.`);
+    return R(200,{status:'review'});}
   if(route==='claim'){
     const p=parse(body.text);if(!p.txId||!p.amount)return R(400,{error:'Sijaelewa SMS. Bandika ujumbe mzima wa muamala.'});
-    const mode=body.mode==='order'?'order':'deposit',ref=db.doc('claims/'+p.txId);
+    const mode=['order','fee'].includes(body.mode)?body.mode:'deposit',ref=db.doc('claims/'+p.txId);
     try{await ref.create({uid:u.uid,mode,orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],claimedAmount:p.amount,claimedName:p.name,fee:p.fee||0,status:'pending',ts:Date.now()});}
     catch(e){const ex=(await ref.get()).data();if(!ex||ex.uid!==u.uid||ex.status==='done')return R(409,{error:'ID hii tayari imetumika.',status:'duplicate'});
       if(['pending','short'].includes(ex.status))await ref.update({orderIds:mode==='order'?(body.orderIds||[]).map(String).slice(0,20):[],mode});}
-    const r=await settle(p.txId,null);return R(200,r);}
+    const r=await settle(p.txId,null);
+    if(mode==='fee'&&r&&r.status!=='done')await notifyAdmins('Dai la Malipo ya Ada ya Duka',`${await feeLabel(u.uid)} ametuma SMS ya muamala ${p.txId} (TZS ${p.amount.toLocaleString()}). Hali: ${r.status}. Hakiki kwenye SMS & Madai ya Malipo.`);
+    return R(200,r);}
   if(route==='admin'){
     if(me.role!=='admin')return R(403,{error:'Admin tu'});const id=String(body.txId||'').toUpperCase();
     if(body.action==='trash'||body.action==='restore'){const id=String(body.id||'').replace(/\W/g,'');
