@@ -454,6 +454,7 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
         const CTM_CATS={oda:{i:'📦',l:'Oda',c:'#10b981',tab:'oda'},ujumbe:{i:'💬',l:'Ujumbe',c:'#3b82f6',tab:'ujumbe'},malipo:{i:'💰',l:'Malipo',c:'#f59e0b',tab:'akaunti'},usajili:{i:'🏪',l:'Usajili & Ada',c:'#a855f7',tab:'akaunti'},huduma:{i:'⭐',l:'Huduma',c:'#ec4899',tab:'akaunti'},usalama:{i:'🛡',l:'Usalama',c:'#ef4444',tab:'akaunti'},mengine:{i:'🔔',l:'Taarifa',c:'#64748b',tab:'akaunti'}};
         function ctmCat(c,t){const x=(String(c||'')+' '+String(t||'')).toLowerCase();if(/ujumbe|chat/.test(x))return'ujumbe';if(/oda|order|mzigo|escrow/.test(x))return'oda';if(/usalama|tahadhari/.test(x))return'usalama';
             if(/ada |ada$|usajili|deni|vip|duka/.test(x))return'usajili';if(/malipo|wallet|commission|cashback|pesa/.test(x))return'malipo';if(/huduma|maoni/.test(x))return'huduma';return'mengine';}
+        function ctmSafe(s){return String(s==null?'':s).replace(/</g,'&lt;').replace(/>/g,'&gt;');}
         function ctmCatBadge(n){const k=CTM_CATS[ctmCat(n.category,n.title)];return `<span style="background:${k.c}22;color:${k.c};border:1px solid ${k.c}55;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:800;margin-right:4px">${k.i} ${k.l}</span>`;}
         function ctmOpenNotif(d){try{const me=window.__ctm&&window.__ctm.me,k=d&&d.kind;
             if(k==='ujumbe'){if(d.chatId!=null&&d.chatId!==''&&typeof activeChatId!=='undefined')activeChatId=isNaN(+d.chatId)?d.chatId:+d.chatId;switchTab('ujumbe');}
@@ -1877,10 +1878,10 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
                         ${notificationsList.map(n => `
                             <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl space-y-1.5 shadow">
                                 <div class="flex justify-between items-center text-xs">
-                                    <span class="font-bold text-emerald-400">${ctmCatBadge(n)}${n.title}</span>
+                                    <span class="font-bold text-emerald-400">${ctmCatBadge(n)}${ctmSafe(n.title)}</span>
                                     <span class="text-[10px] text-slate-400">${n.time} <button onclick="ctmDelNotif(${n.id})" class="text-red-400 ml-1">🗑</button></span>
                                 </div>
-                                <p class="text-xs text-slate-300">${n.details}</p>
+                                <p class="text-xs text-slate-300">${ctmSafe(n.details)}</p>
                             </div>
                         `).join('')}
                     </div>
@@ -1897,7 +1898,7 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
                     </div>
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-xs text-slate-300 space-y-3 leading-relaxed">
                         <p>1. Unatakiwa kutoa taarifa sahihi za biashara au taarifa za binafsi unapojiandikisha kwenye mfumo.</p>
-                        <p>2. Usajili wa duka ni TZS 10,000: unaweza kulipa moja kwa moja, au kuanza bure na kukatwa 5% ya kila mauzo hadi deni liishe. Maduka 10 ya kwanza ni VIP (bure kabisa).</p>
+                        <p>2. Maduka 15 ya kwanza yanapata mwezi 1 bure (5% ya mauzo inakatwa kama kawaida). Baada ya hapo ada ni TZS 10,000 kwa miezi 3: lipa moja kwa moja, au kwa mkopo (kila mauzo yanakatwa 5% ya CTM + 5% ya mkopo hadi deni liishe). Kila duka linaweza kuwa na dalali 2 tu.</p>
                         <p>3. Matumizi sahihi ya mfumo, sub-shops na uaminifu kwa wateja na wauzaji.</p>
                     </div>
                 </div>
@@ -1974,10 +1975,10 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
                                    <input type="text" id="reg-shopname" value="" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
                                 </div>
                                 <div class="space-y-2 bg-slate-900 border border-amber-500/40 rounded-xl p-3">
-                                   <p class="text-xs font-bold text-amber-300">💳 Ada ya Usajili: TZS 10,000</p>
-                                   <p class="text-[10px] text-emerald-300">🌟 Maduka 10 ya kwanza ni VIP: bure kabisa, bila deni na bila makato ya 5%.</p>
-                                   <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="reg-plan" value="cut" checked><span><b>Anza bure - Lipa Kidogo.</b> 5% ya kila mauzo inakatwa hadi deni la TZS 10,000 liishe; kisha unapata 100%.</span></label>
-                                   <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="reg-plan" value="direct"><span><b>Lipa TZS 10,000 moja kwa moja</b> kwa namba ya malipo ya CTM (hakuna makato ya 5%).</span></label>
+                                   <p class="text-xs font-bold text-amber-300">💳 Ada ya Usajili: TZS 10,000 kwa miezi 3</p>
+                                   <p class="text-[10px] text-pink-300">🎁 Maduka 15 ya kwanza yanapata mwezi 1 BURE (5% ya mauzo inakatwa kama kawaida).</p>
+                                   <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="reg-plan" value="direct" checked><span><b>Lipa moja kwa moja</b> kwa namba ya malipo ya CTM. Makato: 5% ya mauzo tu.</span></label>
+                                   <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="reg-plan" value="loan"><span><b>Lipia kwa mkopo.</b> Duka linaonekana mara moja; kila mauzo yanakatwa 5% ya CTM + 5% ya mkopo hadi deni la TZS 10,000 liishe.</span></label>
                                 </div>
                                 <div>
                                    <label class="block text-slate-300 font-medium mb-1">Namba ya NIDA:</label>
@@ -2373,7 +2374,7 @@ function hydrate(){
   productsList=S.products;vendorReelsList=S.reels;storiesList=S.stories;complaintsList=S.complaints;
   productsList.forEach(p=>p.isWishlisted=!!(me&&(me.wishlist||[]).includes(p.id)));
   cartItems=me?(me.cart||[]).map(x=>Object.assign({},x)):[];
-  vendorsList=S.accounts.filter(a=>a.role==='vendor'||a.role==='dalali').map(a=>({id:a.id,shopName:a.shopName,owner:a.name,phone:a.phone,location:a.location||'',isMikoani:a.isMikoani!==undefined?a.isMikoani:!/arusha/i.test(a.location||''),distanceKm:a.distanceKm||2,imgUrl:a.imgUrl||(window.ctmAv?ctmAv(a):''),coverImage:a.coverUrl,coverType:a.coverType||'image',isFollowing:!!(me&&(me.following||[]).includes(a.id)),verified:!!a.verified,isApproved:!a.suspended&&((a.isApproved!==false)||(!!a.autoApproveAt&&Date.now()>=a.autoApproveAt)),lat:a.lat||-3.3869,lng:a.lng||36.6829,baseDeliveryFee:a.baseDeliveryFee||3000,daysRemaining:a.daysRemaining||90,subShops:a.subShops||(a.subShops=[]),growth:a.growth||'0%',eligible:a.eligible||'No',badge:a.role==='dalali'?'Dalali':a.badge||'New Vendor',badgeColor:a.badgeColor||'bg-slate-500/10 text-slate-300 border-slate-500/30',joined:a.joined||'',selectedRegions:a.selectedRegions||[],paymentStatus:a.paymentStatus||'',registrationDebt:a.registrationDebt||0,totalPaidTowardDebt:a.totalPaidTowardDebt||0,vipNo:a.vipNo||0}))
+  vendorsList=S.accounts.filter(a=>a.role==='vendor'||a.role==='dalali').map(a=>({id:a.id,shopName:a.shopName,owner:a.name,phone:a.phone,location:a.location||'',isMikoani:a.isMikoani!==undefined?a.isMikoani:!/arusha/i.test(a.location||''),distanceKm:a.distanceKm||2,imgUrl:a.imgUrl||(window.ctmAv?ctmAv(a):''),coverImage:a.coverUrl,coverType:a.coverType||'image',isFollowing:!!(me&&(me.following||[]).includes(a.id)),verified:!!a.verified,isApproved:!a.suspended&&((a.isApproved!==false)||(!!a.autoApproveAt&&Date.now()>=a.autoApproveAt)),lat:a.lat||-3.3869,lng:a.lng||36.6829,baseDeliveryFee:a.baseDeliveryFee||3000,daysRemaining:a.daysRemaining||90,subShops:a.subShops||(a.subShops=[]),growth:a.growth||'0%',eligible:a.eligible||'No',badge:a.role==='dalali'?'Dalali':a.badge||'New Vendor',badgeColor:a.badgeColor||'bg-slate-500/10 text-slate-300 border-slate-500/30',joined:a.joined||'',selectedRegions:a.selectedRegions||[],paymentStatus:a.paymentStatus||'',registrationDebt:a.registrationDebt||0,totalPaidTowardDebt:a.totalPaidTowardDebt||0,giftNo:a.giftNo||0}))
     .sort((x,y)=>(me&&y.id===me.id)-(me&&x.id===me.id));
   registeredCustomersList=S.accounts.filter(a=>a.role==='customer').map(a=>({id:'CUST-'+a.id,name:a.name,phone:a.phone,email:a.email,joined:a.joined||'-',ordersCount:S.orders.filter(o=>o.customerId===a.id).length,cashbackEarned:'TZS 0',status:'Active'}));
   orderHistory=me?S.orders.filter(o=>o.customerId===me.id&&!(o.hiddenFor||[]).includes(me.id)):[];
@@ -2615,7 +2616,7 @@ window.ctmAfterHydrate=function(){
   vendorsList.forEach(v=>{const a=S.accounts.find(x=>x.id===v.id);v.daysRemaining=Math.ceil((a.paidUntil-n)/DAY);v.locMarked=!!a.locMarked;if(!sess.has(v.id))sess.set(v.id,Math.random());});
   vendorsList.sort((x,y)=>(me&&y.id===me.id)-(me&&x.id===me.id)||sess.get(x.id)-sess.get(y.id));
   if(me&&me.role==='vendor'){currentUser.daysRemaining=Math.ceil((me.paidUntil-n)/DAY);
-    const d=new Date().toDateString();if(currentUser.daysRemaining<=7&&me.feeNote!==d&&(!me.paymentStatus||me.paymentStatus==='pending_direct')){me.feeNote=d;C.notify(me.id,'Kumbusho la Ada ya Duka','Usajili',`Ada ya TZS 10,000 inaisha baada ya siku ${Math.max(currentUser.daysRemaining,0)}. Lipa kupitia kichupo cha Oda.`);dirty=true;}}
+    const d=new Date().toDateString();if(currentUser.daysRemaining<=7&&me.feeNote!==d){me.feeNote=d;C.notify(me.id,'Kumbusho la Ada ya Duka','Usajili',`Ada ya TZS 10,000 inaisha baada ya siku ${Math.max(currentUser.daysRemaining,0)}. Lipa kwa namba ya malipo, au lipia kwa mkopo (bila kulipa sasa) kwenye kichupo cha Oda.`);dirty=true;}}
   /* stories: wanaofuatwa + zangu, masaa 24, ambazo hazijaonwa kwanza */
   const seen=(me&&me.seen)||[];
   storiesList=!me?[]:S.stories.filter(s=>n-s.ts<DAY&&(s.ownerId===me.id||(me.following||[]).includes(s.ownerId)||((S.accounts.find(x=>x.id===s.ownerId)||{}).role==='admin')))
@@ -2675,22 +2676,24 @@ window.ctmEmoji=()=>{let p=$('emo-panel');if(p){p.remove();return;}const f=docum
 window.ctmAddEmo=e=>{const i=$('chat-msg-input');i.value+=e;i.focus();};
 window.ctmSticker=i=>send({sticker:STK[i]});
 /* ---------- Ada ya mwezi + alama ya eneo ---------- */
-/* ---------- Kadi ya hali ya ada (VIP / Lipa Kidogo / Fully Paid) ---------- */
-window.ctmFeeBadge=v=>{const st=v.paymentStatus,deb=v.registrationDebt||0,sp=(c,t)=>`<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${c}">${t}</span>`;
-  if(!st)return `<p class="mt-1">${sp('bg-slate-500/10 text-slate-300 border-slate-500/30','Akaunti ya zamani (5% kawaida)')}</p>`;
-  if(st==='vip')return `<p class="mt-1">${sp('bg-amber-500/15 text-amber-300 border-amber-400/50','🌟 VIP / Free'+(v.vipNo?' #'+v.vipNo:''))}</p>`;
-  if(st==='fully_paid')return `<p class="mt-1">${sp('bg-emerald-500/15 text-emerald-300 border-emerald-400/50','✅ Fully Paid (100% ya mauzo)')}</p>`;
-  if(st==='lipa_kidogo')return `<p class="mt-1">${sp('bg-sky-500/15 text-sky-300 border-sky-400/50','💳 Lipa Kidogo - Deni limesalia TZS '+deb.toLocaleString())}</p>`;
-  return `<p class="mt-1">${sp('bg-red-500/15 text-red-300 border-red-400/50','⏳ Anasubiri kulipa TZS '+deb.toLocaleString()+' (moja kwa moja)')}</p>`;};
-window.ctmFeeCard=function(me,d){const st=me.paymentStatus,debt=me.registrationDebt||0,paid=me.totalPaidTowardDebt||0,pc=Math.min(100,Math.round(paid/100)),
-  bx=c=>`bg-slate-900 border ${c} rounded-2xl p-3 space-y-2`,b=(c,t,f)=>`<button onclick="${f}" class="${c} font-extrabold text-[11px] px-3 py-2 rounded-xl">${t}</button>`;
-  if(st==='vip')return `<div class="${bx('border-amber-400/60')}"><p class="text-xs font-black text-amber-300">🌟 VIP / Free${me.vipNo?' #'+me.vipNo:''}</p><p class="text-[11px] text-slate-300">Huna deni la usajili na hakuna makato ya 5%. Unapata 100% ya mauzo yako.</p></div>`;
-  if(st==='fully_paid')return `<div class="${bx('border-emerald-500/50')}"><p class="text-xs font-black text-emerald-400">✅ Fully Paid</p><p class="text-[11px] text-slate-300">Umemaliza ada ya usajili (TZS ${paid.toLocaleString()||'10,000'}). Unapata 100% ya mauzo yako.</p></div>`;
-  if(st==='lipa_kidogo')return `<div class="${bx('border-sky-500/50')}"><div class="flex items-center justify-between"><p class="text-xs font-black text-sky-300">💳 Lipa Kidogo</p><p class="text-[11px] font-bold text-amber-300">Deni limesalia TZS ${debt.toLocaleString()}</p></div>
-    <div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-2 bg-sky-400" style="width:${pc}%"></div></div><p class="text-[11px] text-slate-400">Umelipa TZS ${paid.toLocaleString()} kati ya 10,000. 5% ya kila mauzo inakatwa kiotomatiki hadi deni liishe.</p>${b('bg-emerald-500 text-slate-950','Lipa Deni Sasa (Namba ya Malipo)','ctmPayFee()')}</div>`;
-  if(st==='pending_direct')return `<div class="${bx('border-red-500/50')}"><p class="text-xs font-black text-red-300">⏳ Ada ya Usajili: TZS ${debt.toLocaleString()}</p><p class="text-[11px] text-slate-400">Lipa moja kwa moja kupitia namba ya malipo ya CTM. Admin akihakiki, hali itakuwa Fully Paid.</p>
-    <div class="flex gap-2">${b('bg-emerald-500 text-slate-950','Lipa Sasa','ctmPayFee()')}${b('bg-slate-700 text-white','Badili: Lipa Kidogo (5%)',"ctmSwitchPlan('cut')")}</div></div>`;
-  return `<div class="bg-slate-900 border ${d<=7?'border-amber-500/60':'border-slate-800'} rounded-2xl p-3 flex items-center justify-between"><div><p class="text-xs font-bold text-white">Ada ya Duka: TZS 10,000 / mwezi</p><p class="text-[11px] ${d<=7?'text-amber-300':'text-slate-400'}">${d>0?`Zimebaki siku ${d}`:'Imeisha - duka limefichwa sokoni'}</p></div><button onclick="ctmPayFee()" class="bg-emerald-500 text-slate-950 font-extrabold text-[11px] px-3 py-2 rounded-xl">Lipa Ada</button></div>`;};
+/* ---------- Kadi ya hali ya ada: Zawadi / Mkopo / Amelipa / Hajalipa ---------- */
+window.ctmFeeBadge=v=>{const st=v.paymentStatus,deb=v.registrationDebt||0,sp=(c,t)=>`<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${c}">${t}</span>`,d=v.daysRemaining;
+  const dd=d!=null?` <span class="text-[10px] text-slate-400">(siku ${Math.max(d,0)})</span>`:'';
+  if(st==='loan'||deb>0)return `<p class="mt-1">${sp('bg-orange-500/15 text-orange-300 border-orange-400/50','💳 KWA MKOPO - Deni limesalia TZS '+deb.toLocaleString())}${dd}</p>`;
+  if(st==='gift')return `<p class="mt-1">${sp('bg-pink-500/15 text-pink-300 border-pink-400/50','🎁 Zawadi mwezi 1 bure'+(v.giftNo?' #'+v.giftNo:''))}${dd}</p>`;
+  if(st==='paid')return `<p class="mt-1">${sp('bg-emerald-500/15 text-emerald-300 border-emerald-400/50','✅ Amelipa ada (miezi 3)')}${dd}</p>`;
+  if(st==='pending')return `<p class="mt-1">${sp('bg-red-500/15 text-red-300 border-red-400/50','⏳ Hajalipa / hajachukua mkopo (haonekani sokoni)')}</p>`;
+  return `<p class="mt-1">${sp('bg-slate-500/10 text-slate-300 border-slate-500/30','Akaunti ya zamani')}${dd}</p>`;};
+window.ctmFeeCard=function(me,d){const st=me.paymentStatus,debt=me.registrationDebt||0,paid=me.totalPaidTowardDebt||0,tot=debt+paid,pc=tot?Math.min(100,Math.round(paid*100/tot)):0,
+  bx=c=>`bg-slate-900 border ${c} rounded-2xl p-3 space-y-2`,b=(c,t,f)=>`<button onclick="${f}" class="${c} font-extrabold text-[11px] px-3 py-2 rounded-xl">${t}</button>`,
+  days=d>0?`Zimebaki siku ${d}`:'Imeisha - duka limefichwa sokoni',
+  btns=`<div class="flex gap-2 flex-wrap">${b('bg-emerald-500 text-slate-950','Lipa Ada (Namba/Wallet)','ctmPayFee()')}${debt+10000<=30000&&(st==='pending'||d<=7)?b('bg-orange-500 text-slate-950','🎁 Lipia kwa Mkopo','ctmTakeLoan()'):''}</div>`;
+  if(debt>0)return `<div class="${bx('border-orange-500/60')}"><div class="flex items-center justify-between"><p class="text-xs font-black text-orange-300">💳 KWA MKOPO</p><p class="text-[11px] font-bold text-amber-300">Deni limesalia TZS ${debt.toLocaleString()}</p></div>
+    <div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-2 bg-orange-400" style="width:${pc}%"></div></div><p class="text-[11px] text-slate-400">${days}. Kila mauzo: 5% ya CTM + 5% ya mkopo (10%) hadi deni liishe. Umelipa TZS ${paid.toLocaleString()}. Unaweza pia kulipa deni kwa namba ya malipo.</p>${btns}</div>`;
+  if(st==='gift')return `<div class="${bx('border-pink-500/50')}"><p class="text-xs font-black text-pink-300">🎁 Zawadi: mwezi 1 bure${me.giftNo?' (#'+me.giftNo+'/15)':''}</p><p class="text-[11px] text-slate-300">${days}. 5% ya kila mauzo inakatwa kama kawaida. Baada ya hapo ada ni TZS 10,000 kwa miezi 3, au mkopo.</p>${btns}</div>`;
+  if(st==='pending')return `<div class="${bx('border-red-500/60')}"><p class="text-xs font-black text-red-300">⏳ Duka halionekani sokoni</p><p class="text-[11px] text-slate-300">Ada ya usajili ni TZS 10,000 kwa miezi 3. Lipa moja kwa moja, au lipia kwa mkopo (5% ya mauzo + 5% ya CTM hadi deni liishe).</p>${btns}</div>`;
+  if(st==='paid')return `<div class="${bx('border-emerald-500/50')}"><p class="text-xs font-black text-emerald-400">✅ Ada imelipwa</p><p class="text-[11px] text-slate-300">${days}. Unakatwa 5% tu ya kila mauzo (CTM).</p>${d<=7?btns:''}</div>`;
+  return `<div class="${bx(d<=7?'border-amber-500/60':'border-slate-800')}"><p class="text-xs font-bold text-white">Ada ya Duka: TZS 10,000 / miezi 3</p><p class="text-[11px] ${d<=7?'text-amber-300':'text-slate-400'}">${days}</p>${btns}</div>`;};
 const _rvo=window.renderVendorOrders;
 window.renderVendorOrders=function(){const me=C.me,d=currentUser.daysRemaining;
   return `<div class="p-4 pb-0 w-full max-w-md md:max-w-xl mx-auto space-y-2">
@@ -2805,11 +2808,12 @@ window.renderSubShopsManager=function(){
   ${inv.map(i=>`<div class="${card}"><p class="text-xs text-white">${esc(i.name)} - msimbo <b class="text-emerald-400">${i.code}</b> (haijatumika)</p>${btn('bg-slate-800 text-emerald-400',"Tuma tena WhatsApp",`ctmShareInvite('${i.code}')`)}</div>`).join('')}
   ${!bs.length&&!inv.length?'<p class="text-xs text-slate-400 text-center py-8">Bado huna dalali. Bonyeza + kuongeza.</p>':''}</div>`;
 };
-window.ctmShareInvite=code=>{const S=ens(),i=S.invites.find(x=>x.code===code),me=C.me;
+window.ctmShareInvite=(code,fb)=>{const S=ens(),i=S.invites.find(x=>x.code===code)||fb||{},me=C.me;
   window.open('https://wa.me/?text='+encodeURIComponent(`Habari ${i.name}, nakualika kuwa dalali wa ${me.shopName} (commission ${i.pct}%) kwenye Closer Market. Fungua ${location.origin+location.pathname}, bonyeza "Nina msimbo wa Dalali" na weka msimbo: ${code}`),'_blank');};
 window.ctmBrokerSave=()=>{const S=ens(),g=i=>$(i).value.trim(),pct=+g('bf-pct');
   if(!g('bf-name')||!g('bf-email')||!g('bf-phone'))return alert('Jaza jina, email na simu.');
   if(!(pct>0&&pct<=50))return alert('Commission iwe kati ya 1 na 50.');
+  if(S.accounts.filter(a=>a.role==='dalali'&&a.parentId===C.me.id).length+S.invites.filter(i=>i.vendorId===C.me.id&&i.status==='invited').length>=2)return alert('Kikomo: kila duka lina dalali 2 tu.');
   const code=Math.random().toString(36).slice(2,8).toUpperCase();
   S.invites.push({code,vendorId:C.me.id,vendorUid:C.me.uid,name:g('bf-name').replace(/[<>"'`]/g,''),email:g('bf-email').toLowerCase(),phone:g('bf-phone').replace(/[<>"'`]/g,''),pct,status:'invited'});
   C.persist();C.hydrate();renderCurrentTab();ctmShareInvite(code);};
@@ -2828,7 +2832,7 @@ window.ctmBrokerSubmit=()=>{const S=ens(),code=$('bj-code').value.trim().toUpper
   const i=S.invites.find(x=>x.code===code&&x.status==='invited');if(!i)return alert('Msimbo si sahihi au umeshatumika.');
   if(pw.length<6)return alert('Neno la siri liwe herufi 6+.');
   if(S.accounts.some(a=>a.email===i.email))return alert('Email hii ina akaunti tayari.');
-  const p=find(i.vendorId),a={id:C.nid(),role:'dalali',parentId:p.id,pct:i.pct,name:i.name,phone:i.phone,email:i.email,pass:C.hash(pw),shopName:`${p.shopName} - ${i.name}`,location:p.location,lat:p.lat,lng:p.lng,locMarked:true,imgUrl:p.imgUrl,coverUrl:p.coverUrl,coverType:p.coverType,isApproved:false,baseDeliveryFee:p.baseDeliveryFee,distanceKm:p.distanceKm,paidUntil:Date.now()+30*864e5,subShops:[],selectedRegions:p.selectedRegions||[],walletBalance:0,rewards:[],cart:[],wishlist:[],following:[],tx:[],bio:'',joined:new Date().toLocaleDateString('en-GB')};
+  const p=find(i.vendorId),a={id:C.nid(),role:'dalali',parentId:p.id,pct:i.pct,name:i.name,phone:i.phone,email:i.email,pass:C.hash(pw),shopName:`${p.shopName} - ${i.name}`,location:p.location,lat:p.lat,lng:p.lng,locMarked:true,imgUrl:p.imgUrl,coverUrl:p.coverUrl,coverType:p.coverType,isApproved:false,baseDeliveryFee:p.baseDeliveryFee,distanceKm:p.distanceKm,paidUntil:Date.now()+90*864e5,subShops:[],selectedRegions:p.selectedRegions||[],walletBalance:0,rewards:[],cart:[],wishlist:[],following:[],tx:[],bio:'',joined:new Date().toLocaleDateString('en-GB')};
   i.status='submitted';i.brokerId=a.id;S.accounts.push(a);C.notify(p.id,'Dalali Anasubiri Idhini','Usajili',`${esc(a.name)} amejisajili kwa msimbo wako. Thibitisha kwenye Madalali.`);C.persist();
   sessionStorage.setItem('ctm_session_v11',String(a.id));$('bj').remove();C.hydrate();switchTab('broker_hub');};
 
@@ -2944,8 +2948,9 @@ function listenSig(){if(room&&room.host)lkStartHost();}
 function cap(pc,k){try{pc.getSenders().forEach(s=>{if(!s.track)return;const p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];p.encodings[0].maxBitrate=(s.track.kind==='video'?k:40)*1000;s.setParameters(p).catch(()=>{});});}catch(e){}}
 function retryHost(l){if(room.host)return;const pc=vpcs[l.hostId];if(!pc){watch(l.hostId,'lv-rv');return;}if(!pc._got&&Date.now()-pc._t>10000){try{pc.close();}catch(e){}delete vpcs[l.hostId];const ph=$('lv-ph');if(ph&&ph.lastElementChild)ph.lastElementChild.textContent='Muunganisho unachelewa (mtandao mgumu). Bado tunajaribu...';}}
 let lk=null,lkP=null,lkMap={},lkPubs=[],lkPubMode=false;const lkAud={};
-const lkLoad=()=>window.LivekitClient?Promise.resolve():new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/livekit-client@2.5.0/dist/livekit-client.umd.js';s.onload=res;s.onerror=()=>rej(new Error('Imeshindwa kupakia LiveKit (angalia mtandao)'));document.head.appendChild(s);});
-function lkAudio(pid){if(!lkAud[pid]){const a=document.createElement('audio');a.autoplay=true;a.style.display='none';document.body.appendChild(a);lkAud[pid]=a;}return lkAud[pid];}
+const lkLoad=()=>window.LivekitClient?Promise.resolve():new Promise((res,rej)=>{const U=['livekit-client.umd.js','https://cdn.jsdelivr.net/npm/livekit-client@2.5.0/dist/livekit-client.umd.js','https://unpkg.com/livekit-client@2.5.0/dist/livekit-client.umd.js','https://cdn.jsdelivr.net/npm/livekit-client@2.5.0/dist/livekit-client.umd.min.js'];let i=0;
+  const next=()=>{if(window.LivekitClient)return res();if(i>=U.length)return rej(new Error('Imeshindwa kupakia LiveKit. Mtandao unazuia chanzo cha maktaba - jaribu mtandao mwingine, au weka faili livekit-client.umd.js kwenye folda public (angalia MAPYA-V36.txt).'));
+    const s=document.createElement('script');s.src=U[i++];s.onload=()=>window.LivekitClient?res():next();s.onerror=()=>{s.remove();next();};document.head.appendChild(s);};next();}); function lkAudio(pid){if(!lkAud[pid]){const a=document.createElement('audio');a.autoplay=true;a.style.display='none';document.body.appendChild(a);lkAud[pid]=a;}return lkAud[pid];}
 function lkErr(e){const ph=$('lv-ph');if(ph&&ph.lastElementChild)ph.lastElementChild.textContent='Imeshindwa kuunganisha live: '+(e&&e.message?e.message:e);}
 function lkConnect(pub){if(lk&&(!pub||lkPubMode))return Promise.resolve(lk);if(lkP)return lkP;
   lkP=(async()=>{try{await lkLoad();const LK=window.LivekitClient;let t=null;
@@ -3110,7 +3115,7 @@ window.ctmRestock=id=>{const p=C.S.products.find(x=>x.id===id);if(!p||p.vendorId
 const TERMS=[
 ['1. Utangulizi na Kukubali Masharti',['Kwa kusajili akaunti au kutumia programu ya Closer to Market (CTM), mtumiaji (Muuzaji, Mnunuzi, au Dalali) anakubali kufungwa na Vigezo na Masharti haya. Kama hakubaliani nayo, hapaswi kutumia mfumo huu.']],
 ['2. Usajili wa Akaunti na Uhakiki (Ulinzi wa NIDA na Leseni)',['Taarifa Sahihi: Wauzaji wote wanatakiwa kutoa taarifa sahihi za biashara zao, ikiwemo namba halali ya NIDA na Leseni ya Biashara.','Uthibitishaji: CTM ina haki ya kusitisha akaunti yoyote itakayogundulika kutumia taarifa za uongo au za mtu mwingine bila idhini.']],
-['3. Mfumo wa Usajili na Ada ya Duka (Subscription)',['Gharama: Usajili wa duka ni TZS 10,000. Chaguo 1: lipa moja kwa moja. Chaguo 2 (Lipa Kidogo): anza bure na 5% ya kila mauzo inakatwa hadi deni liishe, kisha unapata 100%. Maduka 10 ya kwanza ni VIP: hayana deni wala makato.','Kurejesha Pesa: Ada hii hairejeshwi (non-refundable) duka linapofungwa na muuzaji au linaposimamishwa kwa kukiuka masharti.']],
+['3. Mfumo wa Usajili na Ada ya Duka (Subscription)',['Gharama: Maduka 15 ya kwanza yanapata mwezi 1 bure (5% ya mauzo inakatwa kama kawaida). Baada ya hapo ada ni TZS 10,000 kwa miezi 3: lipa moja kwa moja, au lipia kwa mkopo (makato 5% ya CTM + 5% ya mkopo hadi deni liishe). Kila duka lina dalali 2 tu.','Kurejesha Pesa: Ada hii hairejeshwi (non-refundable) duka linapofungwa na muuzaji au linaposimamishwa kwa kukiuka masharti.']],
 ['4. Usimamizi wa Madalali na Sub-shops',['Wajibu wa Mmiliki: Wamiliki wa maduka wakuu wanawajibika kikamilifu kwa miamala na tabia za Madalali au Sub-shops walizowaajiri chini ya ofisi zao (Subshop Office & Control).','CTM haitahusika na migogoro ya ndani ya kimaslahi kati ya mmiliki wa duka na dalali wake.']],
 ['5. Usalama wa Pochi ya Kidijitali (Wallet na Namba ya Siri)',['Ulinzi wa Namba ya Siri: Mtumiaji anawajibika kulinda namba yake ya siri. CTM haitahusika na upotevu wa pesa unaotokana na uzembe wa mtumiaji kumpa mtu mwingine namba yake ya siri.','Miamala: Pesa zilizowekwa kwenye Wallet (Deposit) zitatumika tu kwa shughuli za ndani ya mfumo kulingana na miongozo ya soko.']],
 ['6. Mwongozo wa Maudhui (Soko Reels na Stories)',['Ni marufuku kupakia picha au video (Reels/Stories) zenye maudhui ya kukiuka sheria za Tanzania, kama vile ukiukaji wa maadili, bidhaa haramu, au silaha.','CTM ina haki ya kufuta maudhui yoyote yanayokiuka maadili bila kutoa taarifa.']]
@@ -3167,12 +3172,12 @@ window.ctmAfterHydrate=function(){if(_mh)_mh();const me=C.me,S=C.S;if(!me)return
   if(amt>0){me.walletBalance=(me.walletBalance||0)+amt;me.tx=[{t:'Cashback',a:amt,n:'Cashback 4% ya '+key,ts:Date.now()},...(me.tx||[])];addLed('cashback',-amt,me.name,'Cashback 4% ya '+key);C.notify(me.id,'Cashback Yako','Malipo',`Umerudishiwa ${fmt(amt)} (4% ya manunuzi ya ${key}).`);}
   C.persist();};
 /* ---- Fedha za CTM (Admin) ---- */
-const LBL={order_fee:'Makato 5% ya oda',shop_fee:'Ada ya duka',withdraw_fee:'Makato ya kutoa pesa',selcom_cost:'Gharama ya Selcom',cashback:'Cashback kwa wateja'};
+const LBL={escrow_in:'Malipo ya bidhaa (escrow)',wallet_in:'Deposit ya wallet',loan_fee:'Mkopo wa ada (umetolewa, si pesa)',loan_repay:'Malipo ya mkopo wa ada',order_fee:'Makato 5% ya oda',shop_fee:'Ada ya duka',withdraw_fee:'Makato ya kutoa pesa',selcom_cost:'Gharama ya Selcom',cashback:'Cashback kwa wateja'};
 window.renderFinance=function(){hideFloatingWidgetOnOtherPages();const L=led().slice().sort((a,b)=>b.ts-a.ts),sum=k=>L.filter(x=>x.kind===k).reduce((s,x)=>s+x.amount,0),pool=L.reduce((s,x)=>s+x.amount,0);
   const card=(t,v,c)=>`<div class="bg-slate-900 border border-slate-800 rounded-xl p-3"><p class="text-[10px] text-slate-400">${t}</p><p class="text-sm font-black ${c}">${fmt(v)}</p></div>`;
   return `<div class="p-4 space-y-3 w-full max-w-md md:max-w-xl mx-auto pb-24"><div class="flex items-center gap-2 border-b border-slate-800 pb-3"><button onclick="ctmBack(()=>{switchTab('akaunti')})" class="p-1.5 bg-slate-800 rounded-lg text-slate-300">←</button><h3 class="font-bold text-sm text-amber-400">Fedha za CTM</h3></div>
   <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-4 text-center"><p class="text-[11px] text-slate-400">Mfuko wa CTM (baada ya gharama)</p><p class="text-2xl font-black text-amber-400">${fmt(pool)}</p></div>
-  <div class="grid grid-cols-2 gap-2">${card('Makato ya oda (5%)',sum('order_fee'),'text-emerald-400')}${card('Ada za maduka',sum('shop_fee'),'text-emerald-400')}${card('Makato ya kutoa pesa',sum('withdraw_fee'),'text-emerald-400')}${card('Gharama za Selcom',sum('selcom_cost'),'text-red-400')}${card('Cashback kwa wateja',sum('cashback'),'text-red-400')}</div>
+  <div class="grid grid-cols-2 gap-2">${card('Makato ya oda (5%)',sum('order_fee'),'text-emerald-400')}${card('Ada za maduka (zilizolipwa)',sum('shop_fee'),'text-emerald-400')}${card('Malipo ya mkopo wa ada',sum('loan_repay'),'text-emerald-400')}${card('Deni la mikopo lililobaki ('+C.S.accounts.filter(a=>(a.registrationDebt||0)>0).length+' maduka)',C.S.accounts.reduce((s,a)=>s+(a.registrationDebt||0),0),'text-orange-300')}${card('Malipo ya bidhaa (escrow)',sum('escrow_in'),'text-sky-300')}${card('Deposit za wallet',sum('wallet_in'),'text-sky-300')}${card('Makato ya kutoa pesa',sum('withdraw_fee'),'text-emerald-400')}${card('Gharama za Selcom',sum('selcom_cost'),'text-red-400')}${card('Cashback kwa wateja',sum('cashback'),'text-red-400')}</div>
   <p class="text-xs font-bold text-white pt-1">Historia (${L.length})</p>
   ${L.slice(0,80).map(x=>`<div class="flex justify-between gap-2 border-b border-slate-800 py-1.5 text-[11px]"><span class="text-slate-300 min-w-0">${LBL[x.kind]||x.kind}<span class="block text-[10px] text-slate-500 truncate">${esc(x.note||x.ref)} - ${new Date(x.ts).toLocaleDateString('en-GB')}</span></span><b class="${x.amount>=0?'text-emerald-400':'text-red-400'}">${x.amount>=0?'+':''}${fmt(x.amount)}</b></div>`).join('')||'<p class="text-xs text-slate-500">Bado hakuna miamala.</p>'}</div>`;};
 /* ---- Futa historia: notifications na oda zilizokamilika ---- */
@@ -3322,7 +3327,7 @@ const KB=[
 [['jisajili','sajili','akaunti mpya','register','fungua akaunti'],'Kujisajili: bonyeza Sign In, kisha "Sajili Akaunti Mpya". Chagua Mteja au Muuzaji, jaza taarifa, weka neno la siri na ukubali Vigezo na Masharti. Muuzaji achague mkoa wa duka.'],
 [['ingia','login','neno la siri','password','nimesahau','sahau'],'Kuingia: tumia email na neno la siri ulilojisajilia. Ukisahau, bonyeza "Umesahau neno la siri?" kwenye ukurasa wa kuingia, utatumiwa barua pepe.'],
 [['duka','fungua duka','kuonekana','muuzaji'],'Duka linaonekana sokoni mara baada ya kujisajili kama Muuzaji, mradi ada iwe imelipwa. Weka alama ya eneo (Akaunti > Mikoa > Weka Eneo) ili wateja wakuone kwenye ramani.'],
-[['ada','subscription','10,000','10000','miezi'],'Ada ya usajili ni TZS 10,000. Chagua kulipa moja kwa moja (namba ya malipo ya CTM au wallet) au Lipa Kidogo (5% ya mauzo inakatwa hadi deni liishe). Maduka 10 ya kwanza ni VIP bure. Hali ya duka lako (VIP / Lipa Kidogo / Fully Paid) inaonekana kwenye kichupo cha Oda.'],
+[['ada','subscription','10,000','10000','miezi'],'Ada ya usajili ni TZS 10,000 kwa miezi 3. Lipa moja kwa moja (namba ya malipo ya CTM au wallet) au lipia kwa mkopo (makato 10% ya mauzo hadi deni liishe). Maduka 15 ya kwanza yanapata mwezi 1 bure. Hali ya duka lako inaonekana kwenye kichupo cha Oda.'],
 [['bidhaa','weka bidhaa','add product','ongeza bidhaa','scan','barcode','qr'],'Kuweka bidhaa: Akaunti > Ongeza Bidhaa. Unaweza kutumia scanner (barcode/QR) kujaza taarifa. Bidhaa ikibaki 3 au chini unapata tahadhari na kitufe cha "+ Ongeza" kwenye Oda.'],
 [['reel','reels','video'],'Reels zinaonekana kwa kila mtu kwenye kichupo cha Reels. Gusa mara ya kwanza kuwasha sauti, kisha gusa kusimamisha. Mwenye duka anaweza kuona na kufuta reels zake kwa kitufe cha "🎬 Zangu".'],
 [['story','stori','status'],'Story zinaonekana kwa wanaofuata duka kwa saa 24. Bonyeza "+ Story yangu" uweke picha/video (hadi dakika 1, na muziki wa nyuma) au status ya maneno yenye font na rangi unazotaka.'],
@@ -3717,9 +3722,9 @@ const rlErr=m=>{const e=$('rl-err');if(e){e.textContent=m;e.classList.remove('hi
 window.ctmRoleGo=async()=>{const u=window.__roleUser,role=window.__roleSel==='vendor'?'vendor':'customer',g=i=>clean($(i)?$(i).value:''),name=g('rl-name'),phone=g('rl-phone');
   if(!name)return rlErr('Weka jina kamili.');if(!$('rl-t').checked)return rlErr('Kubali Vigezo na Masharti ili uendelee.');
   const f={name,phone,email:norm(u.email)};let region='Arusha';
-  if(role==='vendor'){region=g('rl-reg')||'Arusha';if(!g('rl-shop'))return rlErr('Weka jina la duka.');Object.assign(f,vendorExtra,{autoApproveAt:Date.now()+180000,paidUntil:Date.now()+90*864e5,shopName:g('rl-shop'),nida:'',businessLicense:'',location:g('rl-loc')||region,region,selectedRegions:[region]});}
+  if(role==='vendor'){region=g('rl-reg')||'Arusha';if(!g('rl-shop'))return rlErr('Weka jina la duka.');Object.assign(f,vendorExtra,{autoApproveAt:Date.now()+180000,paidUntil:Date.now(),needsPlan:true,shopName:g('rl-shop'),nida:'',businessLicense:'',location:g('rl-loc')||region,region,selectedRegions:[region]});}
   try{const a=newAcct(u.uid,role,f);await finish(a);
-    if(role==='vendor'&&window.ctmApplyPlan)ctmApplyPlan(window.__planSel==='direct'?'direct':'cut');
+    if(role==='vendor'&&window.ctmApplyPlan)ctmApplyPlan(window.__planSel==='loan'?'loan':'direct');
     C.notify(a.id,'Karibu Closer Market','Usajili',role==='vendor'?'Duka lako linaonekana sokoni sasa (ruhusu eneo ili lionekane). Thibitisha NIDA na leseni upate alama ya Trusted.':'Akaunti yako iko tayari. Anza kununua!');C.persist();
     if(role==='vendor')setTimeout(()=>{C.S.accounts.filter(x=>x.role==='admin').forEach(ad=>C.notify(ad.id,'Muuzaji Mpya','Usajili',a.shopName+' ('+a.name+') amejisajili kwa Google.'));C.persist();},2500);
     window.__gPending=null;const o=$('role-ov');if(o)o.remove();localStorage.setItem('welcomed_closer_v10','true');setTimeout(()=>{C.hydrate();switchTab(role==='vendor'?'akaunti':'soko');if(role==='vendor')setTimeout(()=>window.ctmMarkLoc&&ctmMarkLoc(),1500);},400);
@@ -3754,7 +3759,7 @@ window.handleUserSignIn=async e=>{e.preventDefault();const em=norm($('signin-use
   setTimeout(()=>{C.hydrate();const ad=C.me&&C.me.role==='admin';switchTab(ad?'admin':'soko');if(ad&&pw==='123456'){alert('⚠ Neno la siri la admin ni dhaifu. Badilisha sasa: Akaunti > Mipangilio ya Admin.');switchTab('akaunti');}},1000);};
 window.userSignOut=async()=>{await signOut(auth);activeChatId=null;openSignInPage();};
 const newAcct=(uid,role,f)=>Object.assign({id:C.nid(),uid,role,imgUrl:'',coverUrl:'',coverType:'image',walletBalance:0,rewards:[],cart:[],wishlist:[],following:[],tx:[],bio:'',joined:new Date().toLocaleDateString('en-GB')},f);
-const vendorExtra={paidUntil:Date.now()+90*864e5,isApproved:true,daysRemaining:90,baseDeliveryFee:3000,distanceKm:2,subShops:[],selectedRegions:[],lat:-3.3869,lng:36.6829,locMarked:false,coverUrl:'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=600&auto=format&fit=crop&q=80'};
+const vendorExtra={paidUntil:Date.now(),needsPlan:true,isApproved:true,daysRemaining:90,baseDeliveryFee:3000,distanceKm:2,subShops:[],selectedRegions:[],lat:-3.3869,lng:36.6829,locMarked:false,coverUrl:'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=600&auto=format&fit=crop&q=80'};
 const finish=async(a)=>{const [pu,pr]=splitAcc(a),clean=JSON.parse(JSON.stringify(san('accounts',pu)));await setDoc(doc(db,'accounts',a.uid),clean);if(pr){const pc=JSON.parse(JSON.stringify(pr));await setDoc(doc(db,'private',a.uid),pc);maps.private[a.uid]=pc;last.private[a.uid]=ss(pc);}maps.accounts[a.uid]=clean;last.accounts[a.uid]=ss(clean);apply();};
 window.completeAccountRegistration=async e=>{e.preventDefault();const g=i=>{const el=$(i);return el?el.value.trim():'';};
   const role=g('reg-account-type')==='vendor'?'vendor':'customer',pw=g('reg-pass'),name=clean(g('reg-fullname'));
@@ -3762,9 +3767,9 @@ window.completeAccountRegistration=async e=>{e.preventDefault();const g=i=>{cons
   if(role==='vendor'&&!clean(g('reg-shopname')))return err('Weka jina la duka.');
   try{const cr=await createUserWithEmailAndPassword(auth,norm(g('reg-email')),pw);if(REQUIRE_VERIFIED_EMAIL)sendEmailVerification(cr.user).catch(()=>{});
     const f={name,phone:clean(g('reg-phone')),email:norm(g('reg-email'))};
-    if(role==='vendor')Object.assign(f,vendorExtra,{autoApproveAt:Date.now()+180000,paidUntil:Date.now()+90*864e5,shopName:clean(g('reg-shopname')),nida:clean(g('reg-nida')),businessLicense:clean(g('reg-license')),location:clean(g('reg-location'))||'Arusha Mjini',region:g('reg-region')||'Arusha',selectedRegions:[g('reg-region')||'Arusha']});
+    if(role==='vendor')Object.assign(f,vendorExtra,{autoApproveAt:Date.now()+180000,paidUntil:Date.now(),needsPlan:true,shopName:clean(g('reg-shopname')),nida:clean(g('reg-nida')),businessLicense:clean(g('reg-license')),location:clean(g('reg-location'))||'Arusha Mjini',region:g('reg-region')||'Arusha',selectedRegions:[g('reg-region')||'Arusha']});
     const a=newAcct(cr.user.uid,role,f);await finish(a);ensureAdmin(cr.user);
-    if(role==='vendor'&&window.ctmApplyPlan)ctmApplyPlan((document.querySelector('input[name=reg-plan]:checked')||{}).value==='direct'?'direct':'cut');
+    if(role==='vendor'&&window.ctmApplyPlan)ctmApplyPlan((document.querySelector('input[name=reg-plan]:checked')||{}).value==='loan'?'loan':'direct');
     C.notify(a.id,'Karibu Closer Market','Usajili',role==='vendor'?'Duka litaonekana sokoni baada ya Admin kuidhinisha.':'Akaunti yako iko tayari.');C.persist();
     if(role==='vendor')setTimeout(()=>{C.S.accounts.filter(x=>x.role==='admin').forEach(ad=>C.notify(ad.id,'Muuzaji Mpya Anasubiri Idhini','Usajili',`${a.shopName} (${a.name}) amejisajili. Duka lake tayari linaonekana sokoni; unaweza kulisimamisha ukitaka.`));C.persist();},2500);
     localStorage.setItem('welcomed_closer_v10','true');setTimeout(()=>switchTab('akaunti'),300);
@@ -3773,7 +3778,7 @@ window.completeAccountRegistration=async e=>{e.preventDefault();const g=i=>{cons
 window.ctmBrokerSubmit=async()=>{const code=$('bj-code').value.trim().toUpperCase(),pw=$('bj-pw').value;
   try{const is=await getDoc(doc(db,'invites',code));if(!is.exists()||is.data().status!=='invited')return alert('Msimbo si sahihi au umeshatumika.');
     const i=is.data(),cr=await createUserWithEmailAndPassword(auth,i.email,pw);if(REQUIRE_VERIFIED_EMAIL)sendEmailVerification(cr.user).catch(()=>{}),ps=await getDoc(doc(db,'accounts',i.vendorUid)),p=ps.data();
-    const a=newAcct(cr.user.uid,'dalali',{parentId:p.id,pct:i.pct,name:i.name,phone:i.phone,email:i.email,shopName:`${p.shopName} - ${i.name}`,location:p.location,lat:p.lat,lng:p.lng,locMarked:true,coverUrl:p.coverUrl,imgUrl:p.imgUrl,isApproved:false,baseDeliveryFee:p.baseDeliveryFee,distanceKm:p.distanceKm,paidUntil:Date.now()+30*864e5,subShops:[],selectedRegions:p.selectedRegions||[]});
+    const a=newAcct(cr.user.uid,'dalali',{inviteCode:code,parentId:p.id,pct:i.pct,name:i.name,phone:i.phone,email:i.email,shopName:`${p.shopName} - ${i.name}`,location:p.location,lat:p.lat,lng:p.lng,locMarked:true,coverUrl:p.coverUrl,imgUrl:p.imgUrl,isApproved:false,baseDeliveryFee:p.baseDeliveryFee,distanceKm:p.distanceKm,paidUntil:Date.now()+90*864e5,subShops:[],selectedRegions:p.selectedRegions||[]});
     await finish(a);const inv=Object.assign({},i,{status:'submitted',brokerId:a.id});await setDoc(doc(db,'invites',code),inv);maps.invites[code]=inv;last.invites[code]=ss(inv);
     C.notify(p.id,'Dalali Anasubiri Idhini','Usajili',`${a.name} amejisajili kwa msimbo wako.`);C.persist();$('bj').remove();switchTab('broker_hub');
   }catch(x){alert(emsg(x));}};
@@ -3816,23 +3821,38 @@ window.ctmConfirmDelivery=id=>run(call('confirmDelivery',{orderId:id,otp:$('vo-o
 window.verifyDeliveryOtp=()=>alert('Mpe muuzaji OTP yako mzigo ukifika; yeye ndiye anaithibitisha.');
 window.ctmApproveBroker=id=>run(call('approveBroker',{id}),'Dalali amekubaliwa');
 window.ctmReq=(id,ok)=>run(call('acceptRequest',{requestId:id,accept:!!ok}),ok?'Bidhaa zimehamishwa':'Ombi limekataliwa');
-window.ctmPayFee=()=>{const me=C.me;if(!me)return;const st=me.paymentStatus,debt=me.registrationDebt||0,due=(['pending_direct','lipa_kidogo'].includes(st)&&debt>0)?debt:10000,w=me.walletBalance||0;
-  const o=ov('<p style="font-weight:800;font-size:15px">🏪 Lipa Ada ya Duka</p><p style="margin:6px 0 10px;color:#cbd5e1">Kiasi: <b style="color:#34d399;font-size:16px">TZS '+due.toLocaleString()+'</b></p><button id="f-n" style="'+BT+'width:100%;background:#10b981;color:#020617;margin-bottom:8px">📲 Lipa kwa Namba ya Malipo<br><span style="font-weight:400;font-size:10px">M-Pesa, Tigo Pesa, Airtel Money, HaloPesa</span></button><button id="f-w" style="'+BT+'width:100%;background:#334155;color:#fff;margin-bottom:8px">👛 Lipa kutoka Wallet (TZS '+w.toLocaleString()+')</button><button id="o-x" style="'+BT+'width:100%;background:#1e293b;color:#94a3b8">Funga</button>');
+window.ctmPayFee=()=>{const me=C.me;if(!me)return;const st=me.paymentStatus,debt=me.registrationDebt||0,due=debt>0?debt:10000,w=me.walletBalance||0;
+  const o=ov('<p style="font-weight:800;font-size:15px">🏪 Lipa Ada ya Duka</p><p style="margin:6px 0 10px;color:#cbd5e1">Kiasi: <b style="color:#34d399;font-size:16px">TZS '+due.toLocaleString()+'</b></p><button id="f-n" style="'+BT+'width:100%;background:#10b981;color:#020617;margin-bottom:8px">📲 Lipa kwa Namba ya Malipo<br><span style="font-weight:400;font-size:10px">M-Pesa, Tigo Pesa, Airtel Money, HaloPesa</span></button><button id="f-w" style="'+BT+'width:100%;background:#334155;color:#fff;margin-bottom:8px">👛 Lipa kutoka Wallet (TZS '+w.toLocaleString()+')</button>'+(me.role==='vendor'&&debt+10000<=30000&&(st==='pending'||Math.ceil(((me.paidUntil||0)-Date.now())/864e5)<=7)?'<button id="f-l" style="'+BT+'width:100%;background:#f97316;color:#020617;margin-bottom:8px">🎁 Lipia kwa Mkopo (bila kulipa sasa)</button>':'')+'<button id="o-x" style="'+BT+'width:100%;background:#1e293b;color:#94a3b8">Funga</button>');
   q$(o,'#o-x').onclick=()=>o.remove();
+  if(q$(o,'#f-l'))q$(o,'#f-l').onclick=()=>{o.remove();ctmTakeLoan();};
   q$(o,'#f-n').onclick=()=>{o.remove();ctmPay('fee',[],r=>{try{C.hydrate();renderCurrentTab();}catch(e){}},due);};
   q$(o,'#f-w').onclick=async()=>{o.remove();const r=await run(call('payFee'),'Ada imelipwa');if(r){try{C.hydrate();renderCurrentTab();}catch(e){}}};};
-window.ctmSwitchPlan=async plan=>{const r=await run(call('setFeePlan',{plan}),plan==='cut'?'Umebadili: Lipa Kidogo (5% ya mauzo hadi deni liishe)':'Umebadili: Lipa moja kwa moja');if(r){try{C.hydrate();renderCurrentTab();}catch(e){}}};
-/* Mpango wa ada wakati wa kujisajili: VIP (10 wa kwanza) / Lipa Kidogo / Lipa moja kwa moja */
-window.planHTML=(nm,extra)=>`<div class="space-y-2 bg-slate-900 border border-amber-500/40 rounded-xl p-3"><p class="text-xs font-bold text-amber-300">💳 Ada ya Usajili: TZS 10,000</p><p class="text-[10px] text-emerald-300">🌟 Maduka 10 ya kwanza ni VIP: bure kabisa, bila deni na bila makato ya 5%.</p>
-  <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="${nm}" value="cut" checked ${extra}><span><b>Anza bure - Lipa Kidogo.</b> 5% ya kila mauzo inakatwa hadi deni la TZS 10,000 liishe; kisha unapata 100%.</span></label>
-  <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="${nm}" value="direct" ${extra}><span><b>Lipa TZS 10,000 moja kwa moja</b> kwa namba ya malipo ya CTM (hakuna makato ya 5%).</span></label></div>`;
-window.__planSel='cut';
+window.ctmBrokerSave=()=>{const S=C.S,g=i=>document.getElementById(i).value.trim(),pct=+g('bf-pct'),me=C.me;
+  if(!g('bf-name')||!g('bf-email')||!g('bf-phone'))return alert('Jaza jina, email na simu.');if(!(pct>0&&pct<=50))return alert('Commission iwe kati ya 1 na 50.');
+  if(S.accounts.filter(a=>a.role==='dalali'&&a.parentId===me.id).length+S.invites.filter(i=>i.vendorId===me.id&&i.status==='invited').length>=2)return alert('Kikomo: kila duka lina dalali 2 tu.');
+  const debt=me.registrationDebt||0,w=me.walletBalance||0,body={name:g('bf-name'),email:g('bf-email'),phone:g('bf-phone'),pct};
+  const o=ov('<p style="font-weight:800;font-size:15px">👥 Ada ya Dalali: TZS 10,000</p><p style="margin:6px 0 10px;color:#cbd5e1;font-size:12px">Kila duka lina dalali 2 tu. Lipa kwa pesa au kwa mkopo (unaingia kwenye deni la makato 5%+5%).</p><button id="b-w" style="'+BT+'width:100%;background:#10b981;color:#020617;margin-bottom:8px">👛 Lipa kutoka Wallet (TZS '+w.toLocaleString()+')</button>'+(debt+10000<=30000?'<button id="b-l" style="'+BT+'width:100%;background:#f97316;color:#020617;margin-bottom:8px">🎁 Lipia kwa Mkopo</button>':'')+'<button id="o-x" style="'+BT+'width:100%;background:#1e293b;color:#94a3b8">Ghairi</button>');
+  q$(o,'#o-x').onclick=()=>o.remove();
+  const go=pay=>async()=>{msg(o,'Inamwongeza dalali...');try{const r=await API('broker',Object.assign({pay},body));o.remove();['bf-name','bf-email','bf-phone','bf-pct'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});alert('Dalali ameongezwa.');try{C.hydrate();renderCurrentTab();}catch(e){}ctmShareInvite(r.code,{name:body.name,pct});}catch(e){msg(o,e.message);}};
+  q$(o,'#b-w').onclick=go('wallet');if(q$(o,'#b-l'))q$(o,'#b-l').onclick=go('loan');};
+window.ctmTakeLoan=()=>{const me=C.me;if(!me||me.role!=='vendor')return;const cur=me.registrationDebt||0;if(cur+10000>30000)return alert('Umefika kikomo cha mkopo (TZS 30,000). Lipa deni kwanza.');
+  const o=ov('<p style="font-weight:800;font-size:15px;margin-bottom:6px">🎁 Lipia kwa Mkopo</p><p style="margin-bottom:8px">Unapokea mkopo wa ada <b style="color:#34d399">TZS 10,000</b> <b>sasa hivi</b>, bila kulipa chochote:</p><ul style="font-size:12px;color:#cbd5e1;margin:0 0 10px 16px;list-style:disc"><li>Duka lako linaonekana sokoni kwa <b>siku 90</b> papo hapo.</li><li>Kila mauzo yanakatwa <b>5% ya CTM + 5% ya mkopo (jumla 10%)</b> hadi deni liishe; kisha 5% tu.</li><li>Kila mauzo utapata ujumbe: makato, deni lililosalia, na pesa kamili iliyoingia Wallet.</li><li>Admin anaona deni lako lililosalia.</li>'+(cur?'<li>Deni lako la sasa: TZS '+cur.toLocaleString()+'.</li>':'')+'</ul><div style="display:flex;gap:8px"><button id="o-x" style="'+BT+'flex:1;background:#334155;color:#fff">Ghairi</button><button id="o-y" style="'+BT+'flex:2;background:#f97316;color:#020617">✅ Kubali Mkopo</button></div>');
+  q$(o,'#o-x').onclick=()=>o.remove();
+  q$(o,'#o-y').onclick=async()=>{const b=q$(o,'#o-y');b.disabled=true;msg(o,'Inaingiza mkopo...');try{const r=await API('loan',{op:'take'});o.remove();alert('Hongera! Umepata mkopo. Duka lako linaonekana sokoni kwa siku '+(r.days||90)+'.');try{C.hydrate();renderCurrentTab();}catch(e){}}catch(e){b.disabled=false;msg(o,e.message);}};};
+/* Mpango wa ada wakati wa kujisajili: maduka 15 ya kwanza = zawadi; wengine wanachagua kulipa moja kwa moja au kwa mkopo */
+window.planHTML=(nm,extra)=>`<div class="space-y-2 bg-slate-900 border border-amber-500/40 rounded-xl p-3"><p class="text-xs font-bold text-amber-300">💳 Ada ya Usajili: TZS 10,000 kwa miezi 3</p><p class="text-[10px] text-pink-300">🎁 Maduka 15 ya kwanza yanapata mwezi 1 BURE (5% ya mauzo inakatwa kama kawaida).</p>
+  <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="${nm}" value="direct" checked ${extra}><span><b>Lipa moja kwa moja</b> kwa namba ya malipo ya CTM. Makato: 5% ya mauzo tu.</span></label>
+  <label class="flex items-start gap-2 text-[11px] text-slate-200"><input type="radio" name="${nm}" value="loan" ${extra}><span><b>Lipia kwa mkopo.</b> Duka linaonekana mara moja; kila mauzo yanakatwa 5% ya CTM + 5% ya mkopo hadi deni la TZS 10,000 liishe.</span></label></div>`;
+window.__planSel='direct';
 window.ctmApplyPlan=async plan=>{try{localStorage.setItem('ctm_plan_pending',plan);}catch(e){}
+  const show=(t,title,btns)=>{const o=ov('<p style="font-weight:800;font-size:15px;margin-bottom:8px">'+title+'</p><p>'+t+'</p><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button id="o-x" style="'+BT+'flex:1;background:#334155;color:#fff">Sawa</button>'+(btns||'')+'</div>');q$(o,'#o-x').onclick=()=>o.remove();return o;};
   try{const r=await call('setFeePlan',{plan});try{localStorage.removeItem('ctm_plan_pending');}catch(e){}
-    const vip=r.status==='vip',dir=r.status==='pending_direct',t=vip?'🌟 Hongera! Duka lako ni VIP'+(r.vipNo?' #'+r.vipNo:'')+'. Hakuna ada ya usajili wala makato ya 5%.':dir?'Ada ya usajili ni TZS 10,000. Lipa sasa kupitia namba ya malipo, Admin ataihakiki.':'Umeanza bure ✅ 5% ya kila mauzo itakatwa hadi deni la TZS 10,000 liishe. Utapata notification kila mauzo yanapokatwa.';
-    const o=ov('<p style="font-weight:800;font-size:15px;margin-bottom:8px">'+(vip?'🌟 VIP':'🏪 Mpango wa Ada')+'</p><p>'+t+'</p><div style="display:flex;gap:8px;margin-top:12px"><button id="o-x" style="'+BT+'flex:1;background:#334155;color:#fff">Sawa</button>'+(dir?'<button id="o-y" style="'+BT+'flex:2;background:#10b981;color:#020617">Lipa Sasa</button>':'')+'</div>');
-    q$(o,'#o-x').onclick=()=>o.remove();const y=q$(o,'#o-y');if(y)y.onclick=()=>{o.remove();ctmPayFee();};}catch(e){console.warn('plan',e.message);}};
-setInterval(()=>{try{const m=C.me,p=localStorage.getItem('ctm_plan_pending');if(USE_FN&&m&&m.role==='vendor'&&!m.paymentStatus&&p&&!window.__planBusy){window.__planBusy=1;ctmApplyPlan(p).finally(()=>{window.__planBusy=0;});}}catch(e){}},8000);
+    if(r.status==='gift'){show('Duka lako ni la zawadi namba '+(r.giftNo||'')+' kati ya 15: mwezi 1 bila kulipa ada. 5% ya kila mauzo inakatwa kama kawaida. Baada ya mwezi 1, ada ni TZS 10,000 kwa miezi 3 (au mkopo).','🎁 Zawadi ya Mwezi 1 Bure');return;}
+    if(r.status==='pending'){
+      if(plan==='loan'){try{const l=await API('loan',{op:'take'});show('Hongera kwa kupata mkopo! Duka lako sasa linaonekana sokoni kwa siku '+(l.days||90)+'. Kila mauzo yatakatwa 5% ya CTM + 5% ya mkopo hadi deni la TZS 10,000 liishe.','✅ Mkopo Umepokelewa');}catch(e){show(e.message,'Mkopo');}return;}
+      const o=show('Ada ya usajili ni TZS 10,000 kwa miezi 3. Lipa sasa kupitia namba ya malipo, au lipia kwa mkopo ili duka lionekane sokoni.','🏪 Kamilisha Ada ya Usajili','<button id="o-y" style="'+BT+'flex:2;background:#10b981;color:#020617">Lipa Sasa</button><button id="o-z" style="'+BT+'flex:2;background:#f97316;color:#020617">🎁 Lipia kwa Mkopo</button>');
+      q$(o,'#o-y').onclick=()=>{o.remove();ctmPayFee();};q$(o,'#o-z').onclick=()=>{o.remove();ctmTakeLoan();};}}catch(e){console.warn('plan',e.message);}};
+setInterval(()=>{try{const m=C.me;if(USE_FN&&m&&m.role==='vendor'&&m.needsPlan&&!m.paymentStatus&&auth.currentUser&&auth.currentUser.emailVerified&&!window.__planBusy){const p=localStorage.getItem('ctm_plan_pending')||'direct';window.__planBusy=1;ctmApplyPlan(p).finally(()=>{window.__planBusy=0;});}}catch(e){}},8000);
 window.ctmCloudApprove=(id,approved)=>run(call('setVendorApproval',{id,approved}));
 }else{
 window.ctmConfirmDelivery=id=>{const S=C.S,o=S.orders.find(x=>x.id===id),me=C.me,otp=$('vo-otp-'+id).value.trim();

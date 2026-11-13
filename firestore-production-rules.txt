@@ -19,10 +19,17 @@ service cloud.firestore { match /databases/{db}/documents {
     allow create: if signed() && request.auth.uid == uid && request.resource.data.role in ['customer','vendor','dalali']
       && txt(request.resource.data.get('name','')) && txt(request.resource.data.get('shopName',''))
       && request.resource.data.get('verified', false) == false
-      && !request.resource.data.keys().hasAny(['paymentStatus','registrationDebt','totalPaidTowardDebt','feePlan','vipNo'])
-      && request.resource.data.get('paidUntil', 0) <= request.time.toMillis() + 91 * 86400000;
+      && request.resource.data.get('needsPlan', true) == true
+      && !request.resource.data.keys().hasAny(['paymentStatus','registrationDebt','totalPaidTowardDebt','feePlan','giftNo','monthLoan','loanTotal','loanAt','autoLoan','loanOfferAt','loanWarnAt'])
+      && request.resource.data.get('paidUntil', 0) <= request.time.toMillis() + (request.resource.data.role == 'dalali' ? 91 : 1) * 86400000
+      && (request.resource.data.role != 'dalali' || (request.resource.data.get('inviteCode', '') is string && request.resource.data.get('inviteCode', '') != ''
+          && exists(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode))
+          && get(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode)).data.status == 'invited'
+          && get(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode)).data.vendorId == request.resource.data.parentId
+          && get(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode)).data.pct == request.resource.data.pct
+          && request.resource.data.get('isApproved', false) == false));
     allow create: if signed() && request.auth.uid == uid && isAdminEmail() && request.resource.data.role == 'admin';
-    allow update: if signed() && request.auth.uid == uid && none(['role','uid','id','pct','parentId','isApproved','suspended','paidUntil','verified','paymentStatus','registrationDebt','totalPaidTowardDebt','feePlan','vipNo'])
+    allow update: if signed() && request.auth.uid == uid && none(['role','uid','id','pct','parentId','isApproved','suspended','paidUntil','verified','paymentStatus','registrationDebt','totalPaidTowardDebt','feePlan','giftNo','needsPlan','monthLoan','loanTotal','loanAt','autoLoan','loanOfferAt','loanWarnAt'])
       && txt(request.resource.data.get('name','')) && txt(request.resource.data.get('shopName','')) && txt(request.resource.data.get('bio',''));
     allow update: if signed() && request.auth.uid == uid && isAdminEmail() && only(['role','isApproved']);
     allow update: if signed() && request.auth.uid == uid && resource.data.role == 'admin' && only(['role']);
@@ -106,8 +113,8 @@ service cloud.firestore { match /databases/{db}/documents {
   match /invites/{code} {
     allow get: if true;
     allow list: if signed() && request.auth.uid in resource.data.members;
-    allow create: if ver() && hasAcc() && request.resource.data.vendorId == myId();
-    allow update: if hasAcc() && (resource.data.vendorId == myId() || (resource.data.status == 'invited' && only(['status','brokerId'])));
+    allow create: if false; // invites za dalali zinatengenezwa na server (/api/broker) ili kikomo cha dalali 2 kilindwe
+    allow update: if hasAcc() && only(['status','brokerId']) && (resource.data.vendorId == myId() || (resource.data.status == 'invited' && request.resource.data.brokerId == myId()));
     allow delete: if false;
   }
   match /ledger/{id} { allow read: if isAdm(); allow write: if false; }

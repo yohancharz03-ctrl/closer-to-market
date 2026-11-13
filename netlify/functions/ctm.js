@@ -20,7 +20,7 @@ function parse(t){t=String(t||'').replace(/\s+/g,' ');
   return{fee:fe?Math.round(parseFloat(fe.replace(/,/g,''))):0,txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:(nm||'').replace(/^Jina\s*/i,'').replace(/[.*]+/g,'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,'').split(' ').filter(x=>x.length>2);
 const note=(t,a,title,details)=>{const id=rid();t.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Oda & Malipo',details,read:false,ts:Date.now()});};
-const SHOP_FEE=10000,DAY=864e5;
+const SHOP_FEE=10000,DAY=864e5,FEE_DAYS=90;
 async function notifyAdmins(title,details){const q=await db.collection('accounts').where('role','==','admin').get(),b=db.batch();
   q.forEach(d=>{const a=d.data(),id=rid();b.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Usajili',details,read:false,ts:Date.now()});});await b.commit();}
 const feeLabel=async uid=>{const a=(await db.doc('accounts/'+uid).get()).data()||{};return (a.shopName||a.name||'Duka')+' ('+(a.name||'')+')';};
@@ -47,17 +47,17 @@ async function settle(txId,claim,force){
         note(t,{id:o.vendorId,uid:o.vendorUid},'Oda Imelipiwa Kikamilifu',`Oda ${o.id} imelipiwa na kuhakikiwa na Ledger. Tafadhali anza kuandaa mzigo!`);held.push(o.id);});
       ex=amt-need;led(t,'escrow_in',need,txId,'Escrow '+held.join(','));
     }
-    if(cl.mode==='fee'){ // ADA YA DUKA: deni la usajili (pending_direct / lipa_kidogo) au ada ya mwezi (akaunti za zamani)
-      const ads=await t.get(db.collection('accounts').where('role','==','admin')),st=acc.paymentStatus,debt=Math.max(0,acc.registrationDebt||0),aref=db.doc('accounts/'+cl.uid);
-      let use=0,upd,msgV,debtLeft=null,nowPaid=false;
-      if(['pending_direct','lipa_kidogo'].includes(st)&&debt>0){use=Math.min(amt,debt);debtLeft=debt-use;nowPaid=debtLeft<=0;
-        upd={registrationDebt:debtLeft,totalPaidTowardDebt:inc(use)};if(nowPaid){upd.paymentStatus='fully_paid';upd.paidUntil=Date.now()+3650*DAY;}
-        msgV=nowPaid?'Malipo yamekubaliwa. Deni la usajili limekwisha - sasa unapata 100% ya mauzo yako (Fully Paid).':`Malipo ya TZS ${use.toLocaleString()} yamekubaliwa. Deni limesalia TZS ${debtLeft.toLocaleString()}.`;}
-      else{const months=force?Math.max(1,Math.floor(amt/SHOP_FEE)):Math.floor(amt/SHOP_FEE);if(months<1){t.set(cref,Object.assign({},cl,{status:'short',amount:amt,need:SHOP_FEE}));return{status:'short',need:SHOP_FEE,amount:amt};}
-        use=Math.min(amt,months*SHOP_FEE);upd={paidUntil:Math.max(acc.paidUntil||0,Date.now())+30*DAY*months};msgV=`Malipo ya ada ya mwezi yamekubaliwa. Duka lako limeongezewa siku ${30*months}.`;}
-      ex=amt-use;t.update(aref,upd);led(t,'shop_fee',use,txId,'Ada ya duka - '+(acc.shopName||cl.uid));
-      note(t,{id:acc.id,uid:cl.uid},nowPaid?'Deni la Usajili Limekwisha ✅':'Ada Imepokelewa',msgV);
-      ads.forEach(d=>note(t,d.data(),'Malipo ya Ada ya Duka Yamekubaliwa',`${acc.shopName||acc.name} amelipa TZS ${use.toLocaleString()} (Muamala ${txId}).${debtLeft!==null?(nowPaid?' Hali: Fully Paid.':' Deni limesalia TZS '+debtLeft.toLocaleString()+'.'):' Muda umeongezwa.'}`));
+    if(cl.mode==='fee'){ // ADA YA DUKA: kwanza deni la mkopo (kama lipo), kisha ada ya miezi 3 (TZS 10,000 kila kipindi)
+      const ads=await t.get(db.collection('accounts').where('role','==','admin')),debt=Math.max(0,acc.registrationDebt||0),aref=db.doc('accounts/'+cl.uid);
+      const pd=Math.min(amt,debt),rest=amt-pd;let per=Math.floor(rest/SHOP_FEE);if(!per&&!pd){if(!force){t.set(cref,Object.assign({},cl,{status:'short',amount:amt,need:SHOP_FEE}));return{status:'short',need:SHOP_FEE,amount:amt};}per=1;}
+      const use=pd+Math.min(rest,per*SHOP_FEE),left=debt-pd,upd={};
+      if(pd){upd.registrationDebt=left;upd.totalPaidTowardDebt=inc(pd);}
+      if(per){upd.paidUntil=Math.max(acc.paidUntil||0,Date.now())+FEE_DAYS*DAY*per;}
+      if(acc.role==='vendor')upd.paymentStatus=left>0?'loan':'paid';
+      ex=amt-use;t.update(aref,upd);const sn=acc.shopName||cl.uid;if(pd)led(t,'loan_repay',pd,txId,'Malipo ya mkopo - '+sn);if(use-pd>0)led(t,'shop_fee',use-pd,txId,'Ada ya duka - '+sn);
+      const msgV=(pd?`Malipo ya mkopo TZS ${pd.toLocaleString()} yamekubaliwa. ${left>0?'Deni limesalia TZS '+left.toLocaleString()+'.':'Mkopo wako umekwisha.'} `:'')+(per?`Ada ya duka imekubaliwa: duka lako linaonekana sokoni kwa siku ${FEE_DAYS*per} zaidi.`:'');
+      note(t,{id:acc.id,uid:cl.uid},'Malipo ya Ada Yamekubaliwa ✅',msgV.trim());
+      ads.forEach(d=>note(t,d.data(),'Malipo ya Ada ya Duka Yamekubaliwa',`${acc.shopName||acc.name} amelipa TZS ${use.toLocaleString()} (Muamala ${txId}).${pd?' Deni la mkopo limesalia TZS '+left.toLocaleString()+'.':''}${per?' Muda umeongezwa siku '+FEE_DAYS*per+'.':''}`));
       held.fee=use;}
     if(ex>0){t.set(P(cl.uid),{walletBalance:inc(ex),tx:union({t:cl.mode==='order'?'Ziada ya oda':cl.mode==='fee'?'Ziada ya ada':'Deposit',a:ex,n:txId,ts:Date.now()})},{merge:true});led(t,'wallet_in',ex,txId,'Wallet '+cl.uid);}
     manualNew?t.set(bref,Object.assign({},bt,{txId,manual:true,ts:Date.now(),usedBy:cl.uid,usedAt:Date.now()})):t.update(bref,{usedBy:cl.uid,usedAt:Date.now()});t.set(cref,Object.assign({},cl,{status:'done',amount:amt,excess:ex}));
@@ -84,6 +84,11 @@ exports.handler=async ev=>{
       if(body.op==='check'){await Pn.verify(u.uid,body.pin);return R(200,{ok:true});}
       if(body.op==='reset'){await Pn.reset(u.uid,body.a,body.pin);return R(200,{ok:true});}
     }catch(e){return R(e.status||500,{error:e.message});}return R(400,{error:'op?'});}
+  if((route==='loan'||route==='broker')&&u.email_verified!==true)return R(403,{error:'Thibitisha email yako kwanza.'});
+  if(route==='loan'){try{const L=require('../lib/loan');
+      if(body.op==='take')return R(200,await L.grantLoan(db,admin,u.uid));
+    }catch(e){return R(e.status||500,{error:e.message});}return R(400,{error:'op?'});}
+  if(route==='broker'){try{return R(200,await require('../lib/loan').inviteBroker(db,admin,u.uid,body));}catch(e){return R(e.status||500,{error:e.message});}}
   if(route==='pay-info'){let total=0;const ids=(body.orderIds||[]).map(String).slice(0,20);
     for(const id of ids){const o=(await db.doc('orders/'+id).get()).data();if(o&&o.customerUid===u.uid&&o.payStatus==='PENDING')total+=o.total;}
     const cfg=(await db.doc('config/app').get()).data()||{};return R(200,{total,pay:cfg.pay||process.env.CTM_PAY||'',help:cfg.help||process.env.CTM_HELP||''});}

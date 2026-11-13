@@ -1,0 +1,88 @@
+CLOSER MARKET - TOLEO V36
+=========================
+(Hili linachukua nafasi ya mfumo wa VIP / "Lipa Kidogo" wa V35. VIP imeondolewa kabisa.)
+
+1) ADA YA USAJILI NA ZAWADI
+ - Maduka 15 YA KWANZA kujisajili baada ya toleo hili: ZAWADI ya mwezi 1 bila kulipa chochote. Si VIP:
+   5% ya kila mauzo inakatwa kama kawaida. Hesabu iko Firestore: config/gift { count }.
+ - Maduka yanayofuata: ada ni TZS 10,000 kwa MIEZI 3. Wakati wa kujisajili wanachagua:
+     a) Lipa moja kwa moja: dirisha la namba ya malipo ya CTM. Admin anapata notification, anaidhinisha (au SMS ikilingana
+        na Transaction ID inathibitika yenyewe). Duka linaonekana siku 90. Makato: 5% tu.
+     b) Lipia kwa mkopo: server inampa mkopo papo hapo, anapata ujumbe "Hongera kwa kupata mkopo", duka linaonekana siku 90.
+        Hahitaji kuthibitisha malipo.
+   Asiyechagua (au akifunga dirisha) anabaki 'pending': duka HALIONEKANI sokoni; kwenye kichupo cha Oda kuna vitufe vyote viwili.
+ - Wote waliopo (akaunti za zamani) nao wanaweza kuchukua mkopo huo: Oda > "Lipia kwa Mkopo".
+
+2) MAKATO YA MAUZO
+ - Kawaida: 5% ya CTM kwenye kila mauzo.
+ - Duka lenye mkopo: 5% ya CTM + 5% ya mkopo = 10% hadi deni (registrationDebt) liishe, kisha 5% tu.
+ - Mwenye duka anapata notification kila mauzo: makato ya CTM, makato ya mkopo, deni lililosalia, na pesa kamili iliyoingia Wallet.
+ - Admin: kila duka linaonyesha beji: 💳 KWA MKOPO - Deni limesalia TZS X / 🎁 Zawadi / ✅ Amelipa ada / ⏳ Hajalipa / Akaunti ya zamani,
+   pamoja na siku zilizobaki. Admin pia anapata notification: mkopo kutolewa, kila malipo ya mkopo, na deni kuisha.
+ - Kikomo cha deni la mkopo: TZS 30,000 kwa duka (mkopo wa ada + dalali).
+ - Mwenye mkopo anaweza kulipa deni wakati wowote kwa namba ya malipo au wallet (deni linapungua kwanza, ziada inaongeza muda).
+ - Sehemu za akaunti zinazowekwa na server tu: paymentStatus ('gift'|'pending'|'loan'|'paid'), registrationDebt, totalPaidTowardDebt, giftNo.
+
+3) DALALI (KIKOMO 2 KWA KILA DUKA)
+ - Kila duka linaweza kuwa na dalali 2 tu (wanaohesabiwa: waliopo + wasiojiunga bado).
+ - Kuongeza dalali = TZS 10,000: lipa kutoka wallet AU lipia kwa mkopo (unaingia kwenye deni lile lile, makato 5%+5%).
+ - Server (/api/broker) ndiyo inayotengeneza msimbo wa mwaliko; rules za production zinakataza client kutengeneza invites.
+ - Dalali mpya anapewa siku 90 za kuonekana. Kuhusu malipo ya baadaye ya dalali (baada ya siku 90): bado analipa mwenyewe kupitia Lipa Ada.
+ - NIMEFIKIRIA ADA YA DALALI = TZS 10,000. Kama unataka kiasi kingine, badilisha BROKER_FEE kwenye netlify/lib/loan.js.
+
+4) SAUTI NA ARIFA (kama V35)
+ - Kila notification/ujumbe unatoa sauti; app wazi = bango la kategoria; app nyuma = arifa ya mfumo yenye profile
+   (📦 Oda, 💬 Ujumbe, 💰 Malipo, 🏪 Usajili & Ada...), ikibonyezwa inafungua ukurasa husika.
+ - Ofa ya mkopo: duka likikaribia kuisha muda (siku 3) au lililoisha linapata notification "Ofa ya Mkopo wa Ada 🎁" (mara moja kwa siku 20).
+
+5) LIVE - "LiveKit haijapakiwa"
+ - Kuna ujumbe wa aina mbili, na zinahitaji suluhisho tofauti:
+   a) "Imeshindwa kupakia LiveKit": simu/mtandao umezuia maktaba kutoka cdn.jsdelivr.net. Sasa app inajaribu vyanzo vingi
+      (faili lako mwenyewe, jsdelivr, unpkg). Suluhisho la kudumu: pakua livekit-client@2.5.0 -> dist/livekit-client.umd.js
+      na uliweke kwenye folda public/ (jina: livekit-client.umd.js). App italitumia kwanza.
+   b) "LiveKit haijawekwa": Netlify haina LIVEKIT_KEY na LIVEKIT_SECRET (na LIVEKIT_URL). Ziweke
+      Site settings > Environment variables, kisha Deploy upya. Hizi ni siri za akaunti yako ya LiveKit Cloud;
+      mimi sina ufikiaji nazo.
+
+5b) ADA DHIDI YA MALIPO YA BIDHAA (Admin > Fedha za CTM)
+ - Malipo ya bidhaa: yanaitwa 'Malipo ya bidhaa (escrow)'; deposit: 'Deposit za wallet'; ada ya duka/dalali: 'Ada za maduka (zilizolipwa)';
+   malipo ya mkopo wa ada (kutoka makato 5% au kulipa deni moja kwa moja): 'Malipo ya mkopo wa ada'; na 'Deni la mikopo lililobaki' (idadi ya maduka + jumla).
+ - Malipo moja yanayojumuisha deni + ada mpya yanagawanywa kwenye leja (mfano 16,000 = 6,000 mkopo + 10,000 ada).
+ - Mkopo kutolewa unaonekana kwenye historia kwa TZS 0 ('si pesa iliyoingia'), kwa hiyo hauongezi 'Mfuko wa CTM'.
+ - Notification: ada = admin anapata 'Malipo ya Ada ya Duka Yamekubaliwa', mlipaji 'Malipo ya Ada Yamekubaliwa'. Bidhaa = 'Oda Imelipiwa Kikamilifu' kwa muuzaji.
+ - KUMBUKA: 'Mfuko wa CTM (baada ya gharama)' (zamani) unajumlisha kila kitu kwenye leja ikiwemo escrow na deposit; sikubadilisha hesabu hiyo.
+
+6) USALAMA (ukaguzi wa V36)
+ Zilizofungwa kwenye toleo hili:
+ - Pesa/wallet/deni/hali ya ada (walletBalance, tx, paymentStatus, registrationDebt, totalPaidTowardDebt, giftNo, needsPlan, paidUntil)
+   haziwezi kuandikwa na mtumiaji kutoka kwenye app; zinaandikwa na server tu.
+ - Muuzaji mpya hawezi kujipa siku za bure: rules zinakataa paidUntil zaidi ya siku 1 wakati wa kujisajili; siku (zawadi/mkopo/malipo) zinatolewa na server.
+ - Zawadi ya maduka 15 na /api/loan, /api/broker vinahitaji email iliyothibitishwa. Akaunti za zamani haziwezi kuomba zawadi (needsPlan).
+ - Mkopo wa ada unaruhusiwa ndani ya siku 7 kabla muda kuisha (au duka lisilolipa bado): huwezi kurundika mikopo mara nyingi kupata miezi ya bure.
+ - Dalali: akaunti ya dalali inaweza kuundwa tu kwa msimbo halali wa mwaliko (inviteCode) wenye vendorId na commission zinazolingana;
+   invites zinatengenezwa na server pekee; kikomo cha 2 kinahesabiwa na server.
+ - Ukurasa wa Taarifa ulikuwa unaonyesha maandishi ya notification bila kuyasafisha (mtu yeyote angeweza kumtumia mwingine notification yenye msimbo hatari). Imerekebishwa.
+ Bado ni hatari / za kuangalia (sijazifunga):
+ - Rules za notifs zinamruhusu mtumiaji yeyote kumwandikia notification mtumiaji mwingine (maandishi ya kudanganya, au push zisizo halali). Hazigusi pesa.
+ - Malipo ya ada kwa SMS: SMS isiyo na jina/namba, au yenye jina linalolingana kidogo tu, inaweza kukubaliwa kwa mtu asiye sahihi
+   akijua Transaction ID ya mtu mwingine. Madai ya mkono ('manual') ni kiasi anachosema mtumiaji: Admin LAZIMA alinganishe na SMS halisi ya benki kabla ya kuidhinisha.
+ - Zawadi ya maduka 15 inaweza kuchukuliwa na mtu mwenye akaunti nyingi za email zilizothibitishwa.
+ - Mkopo ni mkopo: duka lisilouza halilipi; kikomo ni TZS 30,000 kwa duka. Angalia orodha ya maduka yenye deni mara kwa mara.
+ - Rules za Firestore za admin: kama config/admin haipo, anayemiliki Gmail ctm2026@gmail.com anaweza kujitengenezea akaunti ya admin.
+   Hakikisha ni email yako, au tengeneza hati config/admin { email: "barua-yako@..." }.
+ - Sikufanya ukaguzi kamili wa kila sehemu ya app (chat, reels, n.k.) na rules hazijaendeshwa kwenye Firebase emulator.
+   Baada ya Publish angalia Rules Playground / jaribu usajili wa muuzaji, dalali, na mteja mpya kabla ya kuwapa watu halisi.
+
+KUWEKA HEWANI
+ 1. Weka folda hii Netlify (publish: public, functions: netlify/functions).
+ 2. Firebase > Firestore > Rules: bandika firestore.production.rules mpya > Publish (LAZIMA: inalinda sehemu za mkopo
+    na inazuia client kutengeneza invites za dalali).
+ 3. Funga na ufungue app mara mbili ili service worker (cache ctm-v36) isasishe.
+
+KUMBUKA / VIKOMO
+ - Sijaendesha app kwenye Firebase/Netlify halisi wala browser. Nimejaribu mantiki ya server (gift 15, pending, mkopo, makato 10%,
+   deni kuisha, malipo ya ada kwa namba, kikomo cha dalali 2) kwa hifadhidata bandia, na mantiki ya notification kwa DOM bandia.
+   Jaribu kwenye mradi wa majaribio kabla ya pesa halisi.
+ - Duka la zawadi (mwezi 1) likiisha bila kulipa litafichwa sokoni hadi alipe au achukue mkopo.
+ - Mkopo unaongeza deni kila unapochukuliwa; mwenye duka asiyeuza hatalipa deni, lakini muda wa siku 90 ukiisha na bado ana deni,
+   anaweza kuchukua mkopo mwingine hadi kikomo cha TZS 30,000, au kulipa kwa namba ya malipo.
