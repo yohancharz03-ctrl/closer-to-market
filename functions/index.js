@@ -61,13 +61,29 @@ exports.confirmDelivery=onCall(async req=>{const uid=uidOf(req),{orderId,otp}=re
     if(!ad.empty&&loanCut>0)note(t,ad.docs[0].data(),cleared?'Mkopo wa Duka Umelipwa Wote':'Malipo ya Mkopo wa Duka',`${v.shopName}: makato ya mkopo TZS ${loanCut.toLocaleString()} (oda ${o.id}). ${cleared?'Deni limekwisha.':'Deni limesalia TZS '+debtLeft.toLocaleString()+'.'}`,'Usajili');
     note(t,c,'Asante kwa Kununua',`Oda ${o.id} imekamilika.`);return {ok:true};});});
 
+const NETS=['M-Pesa','Tigo Pesa','Airtel Money','HaloPesa','T-Pesa'];
+/* Namba ya kupokea pesa (Lipa Namba/simu) + jina la mtandao. Inahifadhiwa kwenye private/{uid}.payout (si public). Kuweka/kubadili kunahitaji PIN ya wallet (fn.js). Admin na mwenye akaunti wanapata taarifa ya mabadiliko. */
+exports.setPayout=onCall(async req=>{const uid=uidOf(req),d=req.data||{},net=String(d.network||''),num=String(d.number||'').replace(/[\s-]/g,''),nm=String(d.name||'').replace(/[<>"'`]/g,'').trim().slice(0,60);
+  if(!NETS.includes(net))throw err('invalid-argument','Chagua mtandao: '+NETS.join(', '));if(!/^\d{5,12}$/.test(num))throw err('invalid-argument','Namba iwe tarakimu 5 hadi 12 (Lipa Namba au namba ya simu).');if(nm.length<3)throw err('invalid-argument','Weka jina la akaunti ya namba hiyo.');
+  return db.runTransaction(async t=>{const m=(await me(t,uid)).data(),w=await wallet(t,uid);if(!['vendor','dalali','admin'].includes(m.role))throw err('permission-denied','Akaunti hii haipokei pesa');
+    const ad=await t.get(db.collection('accounts').where('role','==','admin')),old=w.payout;
+    t.set(P(uid),{payout:{network:net,number:num,name:nm,ts:Date.now()}},{merge:true});
+    note(t,m,old?'Namba ya Kupokea Pesa Imebadilishwa':'Namba ya Kupokea Pesa Imewekwa',`${net} ${num} (${nm}). Kama si wewe, wasiliana na CTM mara moja.`,'Malipo');
+    if(old)ad.forEach(x=>{if(x.id!==uid)note(t,x.data(),'Mtumiaji Amebadili Namba ya Kupokea Pesa',`${m.shopName||m.name} (${m.name}) amebadili kutoka ${old.network} ${old.number} kwenda ${net} ${num}.`,'Malipo');});
+    return {ok:true,payout:{network:net,number:num,name:nm}};});});
+
 exports.withdraw=onCall(async req=>{const uid=uidOf(req),a=Math.floor(+req.data.amount);
   return db.runTransaction(async t=>{const m=(await me(t,uid)).data(),w=await wallet(t,uid);
     if(!['vendor','dalali','admin'].includes(m.role))throw err('permission-denied','Akaunti hii haiwezi kutoa pesa');
-    const fee=0;
+    if(!w.payout||!w.payout.number)throw err('failed-precondition','Weka Lipa Namba ya kupokea pesa (na jina la mtandao) kwanza.');
+    const ad=await t.get(db.collection('accounts').where('role','==','admin')),fee=0;
     if(!(a>=1000)||a+fee>(w.walletBalance||0))throw err('failed-precondition','Kiasi si sahihi au salio halitoshi (makato: TZS '+fee+')');
+    const id=rid();
     t.set(P(uid),{walletBalance:inc(-a),tx:union(tx('Withdraw',-a))},{merge:true});
-    t.set(db.doc('withdrawals/'+rid()),{uid,accountId:m.id,phone:m.phone,amount:a,fee,status:'pending',ts:Date.now()});return {ok:true,fee};});});
+    t.set(db.doc('withdrawals/'+id),{id,uid,accountId:m.id,role:m.role,name:m.name,shopName:m.shopName||'',phone:m.phone,amount:a,fee,payout:{network:w.payout.network,number:w.payout.number,name:w.payout.name},status:'pending',ts:Date.now()});
+    ad.forEach(x=>note(t,x.data(),'Ombi la Kutoa Pesa',`${m.shopName||m.name} (${m.name}) anaomba TZS ${a.toLocaleString()} atumiwe ${w.payout.network} ${w.payout.number} (${w.payout.name}). Fungua Akaunti > Maombi ya Kutoa Pesa.`,'Malipo'));
+    note(t,m,'Ombi la Kutoa Pesa Limepokelewa',`TZS ${a.toLocaleString()} itatumwa ${w.payout.network} ${w.payout.number}. Utapata taarifa ikitumwa.`,'Malipo');
+    return {ok:true,fee};});});
 
 exports.payFee=onCall(async req=>{const uid=uidOf(req);
   return db.runTransaction(async t=>{const s=await me(t,uid),m=s.data(),w=await wallet(t,uid),bal=w.walletBalance||0;

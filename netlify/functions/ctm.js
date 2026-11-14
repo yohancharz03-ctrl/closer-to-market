@@ -19,7 +19,7 @@ function parse(t){t=String(t||'').replace(/\s+/g,' ');
   const fe=(t.match(/Ada\s+Jumla\s+(?:TZS|Tshs?)\.?\s?([\d,]+(?:\.\d+)?)/i)||[])[1];
   return{fee:fe?Math.round(parseFloat(fe.replace(/,/g,''))):0,txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:(nm||'').replace(/^Jina\s*/i,'').replace(/[.*]+/g,'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,'').split(' ').filter(x=>x.length>2);
-const note=(t,a,title,details)=>{const id=rid();t.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Oda & Malipo',details,read:false,ts:Date.now()});};
+const note=(t,a,title,details,cat)=>{const id=rid();t.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:cat||'Oda & Malipo',details,read:false,ts:Date.now()});};
 const SHOP_FEE=10000,DAY=864e5,FEE_DAYS=90;
 async function notifyAdmins(title,details){const q=await db.collection('accounts').where('role','==','admin').get(),b=db.batch();
   q.forEach(d=>{const a=d.data(),id=rid();b.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Usajili',details,read:false,ts:Date.now()});});await b.commit();}
@@ -56,14 +56,14 @@ async function settle(txId,claim,force){
       if(acc.role==='vendor')upd.paymentStatus=left>0?'loan':'paid';
       ex=amt-use;t.update(aref,upd);const sn=acc.shopName||cl.uid;if(pd)led(t,'loan_repay',pd,txId,'Malipo ya mkopo - '+sn);if(use-pd>0)led(t,'shop_fee',use-pd,txId,'Ada ya duka - '+sn);
       const msgV=(pd?`Malipo ya mkopo TZS ${pd.toLocaleString()} yamekubaliwa. ${left>0?'Deni limesalia TZS '+left.toLocaleString()+'.':'Mkopo wako umekwisha.'} `:'')+(per?`Ada ya duka imekubaliwa: duka lako linaonekana sokoni kwa siku ${FEE_DAYS*per} zaidi.`:'');
-      note(t,{id:acc.id,uid:cl.uid},'Malipo ya Ada Yamekubaliwa ✅',msgV.trim());
-      ads.forEach(d=>note(t,d.data(),'Malipo ya Ada ya Duka Yamekubaliwa',`${acc.shopName||acc.name} amelipa TZS ${use.toLocaleString()} (Muamala ${txId}).${pd?' Deni la mkopo limesalia TZS '+left.toLocaleString()+'.':''}${per?' Muda umeongezwa siku '+FEE_DAYS*per+'.':''}`));
+      note(t,{id:acc.id,uid:cl.uid},'Malipo ya Ada Yamekubaliwa ✅',msgV.trim(),'Usajili');
+      ads.forEach(d=>note(t,d.data(),'Malipo ya Ada ya Duka Yamekubaliwa',`${acc.shopName||acc.name} amelipa TZS ${use.toLocaleString()} (Muamala ${txId}).${pd?' Deni la mkopo limesalia TZS '+left.toLocaleString()+'.':''}${per?' Muda umeongezwa siku '+FEE_DAYS*per+'.':''}`,'Usajili'));
       held.fee=use;}
     if(ex>0){t.set(P(cl.uid),{walletBalance:inc(ex),tx:union({t:cl.mode==='order'?'Ziada ya oda':cl.mode==='fee'?'Ziada ya ada':'Deposit',a:ex,n:txId,ts:Date.now()})},{merge:true});led(t,'wallet_in',ex,txId,'Wallet '+cl.uid);}
     manualNew?t.set(bref,Object.assign({},bt,{txId,manual:true,ts:Date.now(),usedBy:cl.uid,usedAt:Date.now()})):t.update(bref,{usedBy:cl.uid,usedAt:Date.now()});t.set(cref,Object.assign({},cl,{status:'done',amount:amt,excess:ex}));
     return{status:'done',escrow:cl.mode==='order'?amt-ex:0,fee:held.fee||0,wallet:ex};});}
 
-exports.handler=async ev=>{
+const handler0=async ev=>{
   try{init();}catch(e){return R(500,{error:'Seva: '+e.message});}db=admin.firestore();inc=admin.firestore.FieldValue.increment;union=admin.firestore.FieldValue.arrayUnion;
   const route=(ev.path||'').split('/').pop(),body=(()=>{try{return JSON.parse(ev.body||'{}')}catch(e){return{}}})();
   if(ev.httpMethod!=='POST')return R(405,{error:'POST tu'});
@@ -77,6 +77,19 @@ exports.handler=async ev=>{
     return R(200,{ok:true,parsed:true,settled:r});}
   let u;try{u=await admin.auth().verifyIdToken(String((ev.headers.authorization||'').replace('Bearer ','')));}catch(e){return R(401,{error:'Ingia kwanza'});}
   const me=(await db.doc('accounts/'+u.uid).get()).data();if(!me)return R(403,{error:'Akaunti haipo'});
+  if(route==='push-test'){try{const r=await require('../lib/push').sendTo(db,admin,u.uid,{title:'Jaribio la Arifa ✅',body:'Ukiona hii ukiwa nje ya app, arifa za nje zinafanya kazi.',kind:'mengine',tag:'ctm-test'});return R(200,r);}catch(e){return R(500,{error:e.message});}}
+  if(route==='wd'){ // MAOMBI YA KUTOA PESA (admin tu): list | paid | reject (rudisha pesa kwenye wallet)
+    if(me.role!=='admin')return R(403,{error:'Admin tu'});
+    if(body.op==='list'){const q=await db.collection('withdrawals').orderBy('ts','desc').limit(60).get();return R(200,{items:q.docs.map(d=>d.data())});}
+    const id=String(body.id||'').replace(/\W/g,''),ref=db.doc('withdrawals/'+id);
+    if(body.op==='paid'||body.op==='reject')try{return R(200,await db.runTransaction(async t=>{const w=(await t.get(ref)).data();if(!w)throw new Error('Ombi halipo');if(w.status!=='pending')throw new Error('Ombi hili limeshashughulikiwa ('+w.status+')');
+        const acc=(await t.get(db.doc('accounts/'+w.uid))).data()||{},pay=w.payout||{};
+        if(body.op==='paid'){t.update(ref,{status:'paid',paidAt:Date.now(),paidBy:u.uid,ref:String(body.ref||'').slice(0,40)});
+          note(t,{id:w.accountId,uid:w.uid},'Pesa Yako Imetumwa ✅',`TZS ${w.amount.toLocaleString()} imetumwa ${pay.network||''} ${pay.number||''}${body.ref?' (kumbukumbu '+String(body.ref).slice(0,40)+')':''}.`,'Malipo');return{ok:true,status:'paid'};}
+        const back=w.amount+(w.fee||0);t.set(P(w.uid),{walletBalance:inc(back),tx:union({t:'Ombi la kutoa pesa limekataliwa (rudishiwa)',a:back,ts:Date.now()})},{merge:true});
+        t.update(ref,{status:'rejected',rejectedAt:Date.now(),rejectedBy:u.uid,reason:String(body.reason||'').slice(0,120)});
+        note(t,{id:w.accountId,uid:w.uid},'Ombi la Kutoa Pesa Limekataliwa',`TZS ${back.toLocaleString()} imerudishwa kwenye Wallet yako.${body.reason?' Sababu: '+String(body.reason).slice(0,120):''}`,'Malipo');return{ok:true,status:'rejected'};}));}catch(e){return R(409,{error:e.message});}
+    return R(400,{error:'op?'});}
   if(route==='push'){try{return R(200,{sent:await require('../lib/push')(db,admin)});}catch(e){return R(500,{error:e.message});}}
   if(route==='pin'){const Pn=require('../lib/pin')(db);try{
       if(body.op==='status')return R(200,await Pn.status(u.uid));
@@ -115,3 +128,5 @@ exports.handler=async ev=>{
     if(body.action==='reject'){await db.doc('claims/'+id).set({status:'rejected'},{merge:true});return R(200,{ok:true});}
     const c=await db.doc('claims/'+id).get();if(!c.exists)return R(404,{error:'Dai halipo'});return R(200,await settle(id,null,true));}
   return R(404,{error:'?'});};
+/* Baada ya kila POST iliyofanikiwa: tuma push za arifa/ujumbe mpya mara moja (si kusubiri dakika moja). */
+exports.handler=async ev=>{const r=await handler0(ev);try{if(ev.httpMethod==='POST'&&r&&r.statusCode<400&&!/push/.test(ev.path||'')){init();await require('../lib/push').kick(admin.firestore(),admin);}}catch(e){}return r;};

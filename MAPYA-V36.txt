@@ -52,6 +52,33 @@ CLOSER MARKET - TOLEO V36
  - Notification: ada = admin anapata 'Malipo ya Ada ya Duka Yamekubaliwa', mlipaji 'Malipo ya Ada Yamekubaliwa'. Bidhaa = 'Oda Imelipiwa Kikamilifu' kwa muuzaji.
  - KUMBUKA: 'Mfuko wa CTM (baada ya gharama)' (zamani) unajumlisha kila kitu kwenye leja ikiwemo escrow na deposit; sikubadilisha hesabu hiyo.
 
+5c) ARIFA ZA NJE YA APP (PUSH) - app imefungwa/imezimwa
+ - Seva inatuma push kwa: notification zote (oda, malipo, ada, mkopo, ombi la kutoa pesa...) NA ujumbe mpya wa chat
+   (kichwa = jina la duka/mtu, ujumbe = maandishi mafupi; ikibonyezwa inafungua chat husika).
+ - Push inatumwa mara moja baada ya kila tukio la seva (si kusubiri dakika moja); push-sweep ya kila dakika inabaki kama kinga.
+ - Token za vifaa zilizokufa zinafutwa zenyewe.
+ - MASHARTI (bila haya push haitafanya kazi, na seva siwezi kuyaweka kwa niaba yako):
+   1. Admin aweke Web Push key (VAPID): Firebase Console > Project settings > Cloud Messaging > Web Push certificates > Generate key pair,
+      kisha kwenye app: Akaunti (admin) > Namba za Malipo & Help > "Web Push key (VAPID)" > Hifadhi.
+   2. Netlify iwe na FIREBASE_SERVICE_ACCOUNT (ile ile ya seva) - bila hiyo seva haiwezi kutuma push.
+   3. Kila mtumiaji aruhusu Notifications kwenye kifaa chake. iPhone: lazima aweke CTM kwenye Home Screen (Share > Add to Home Screen, iOS 16.4+).
+   4. Netlify Scheduled Functions ziwe zimewashwa kwa site (push-sweep ya kila dakika).
+ - ANGALIA/JARIBU: Akaunti > "🔔 Arifa za Nje ya App": inaonyesha hali (imewashwa / VAPID haipo / umezuia / kifaa hakisaidii) na kitufe
+   "Jaribu Arifa Sasa" kinachotuma push halisi kwa kifaa chako; funga app kisha uone kama inafika.
+ - Sauti ya arifa ya nje inategemea simu (Do Not Disturb, channel ya Chrome/Android).
+
+5d) NAMBA YA KUPOKEA PESA + MAOMBI YA KUTOA PESA
+ - Mwenye duka/dalali anaambiwa aweke Lipa Namba (au namba ya simu) na JINA LA MTANDAO (M-Pesa, Tigo Pesa, Airtel Money, HaloPesa, T-Pesa)
+   pamoja na jina la akaunti: Akaunti > "📲 Namba ya Kupokea Pesa" (pia kadi ya wallet na ukumbusho ukiingia). Anahitaji PIN ya wallet kuweka/kubadili.
+ - Namba inahifadhiwa kwenye private/{uid}.payout (si public; mtumiaji hawezi kuiandika moja kwa moja, seva tu). Haiwezi kutoa pesa bila kuweka namba.
+ - Ombi la kutoa pesa linahifadhi "snapshot" ya namba wakati wa ombi (kubadili baadaye hakubadilishi ombi lililotumwa).
+ - Admin: Akaunti > "💸 Maombi ya Kutoa Pesa": kila ombi linaonyesha jina/duka, kiasi, MTANDAO + NAMBA ya kutuma (kitufe cha Nakili), jina la namba.
+   "✅ Nimetuma" (+kumbukumbu ya muamala hiari) => mwenye duka anapata notification "Pesa yako imetumwa".
+   "❌ Kataa" (+sababu) => pesa inarudishwa kwenye wallet yake na anaarifiwa. Ombi halishughulikiwi mara mbili.
+ - Admin anapata notification (na push) kila ombi jipya. Mtu akibadili namba ya kupokea pesa, admin anapata taarifa (kuzuia wizi wa akaunti).
+ - Pesa halisi bado unaituma wewe (Admin) kwa mkono kupitia mtandao husika; app inakuonyesha tu namba sahihi na kufuatilia hali.
+   Hakuna aggregator wala malipo ya kiotomatiki ya kutoa pesa.
+
 6) USALAMA (ukaguzi wa V36)
  Zilizofungwa kwenye toleo hili:
  - Pesa/wallet/deni/hali ya ada (walletBalance, tx, paymentStatus, registrationDebt, totalPaidTowardDebt, giftNo, needsPlan, paidUntil)

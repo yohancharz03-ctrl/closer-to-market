@@ -37,8 +37,8 @@ service cloud.firestore { match /databases/{db}/documents {
   }
   match /private/{uid} {
     allow read: if signed() && (request.auth.uid == uid || isAdm());
-    allow create: if signed() && request.auth.uid == uid && request.resource.data.get('walletBalance',0) == 0 && request.resource.data.get('tx',[]).size() == 0;
-    allow update: if signed() && request.auth.uid == uid && none(['walletBalance','tx','cbPaid','wd']);
+    allow create: if signed() && request.auth.uid == uid && request.resource.data.get('walletBalance',0) == 0 && request.resource.data.get('tx',[]).size() == 0 && !request.resource.data.keys().hasAny(['payout']);
+    allow update: if signed() && request.auth.uid == uid && none(['walletBalance','tx','cbPaid','wd','payout']);
     allow delete: if false;
   }
   match /config/{id} { allow read: if signed(); allow write: if isAdm(); }
