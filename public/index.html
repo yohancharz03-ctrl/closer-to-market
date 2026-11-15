@@ -46,15 +46,20 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
       import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
       
+      <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+      
       const firebaseConfig = {
-  apiKey: window.ENV ? window.ENV.FIREBASE_API_KEY : process.env.FIREBASE_API_KEY,
-  authDomain: window.ENV ? window.ENV.FIREBASE_AUTH_DOMAIN : process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: window.ENV ? window.ENV.FIREBASE_PROJECT_ID : process.env.FIREBASE_PROJECT_ID,
-  storageBucket: window.ENV ? window.ENV.FIREBASE_STORAGE_BUCKET : process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: window.ENV ? window.ENV.FIREBASE_MESSAGING_SENDER_ID : process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: window.ENV ? window.ENV.FIREBASE_APP_ID : process.env.FIREBASE_APP_ID,
-  measurementId: "G-2SVYH6WSTR"
-};
+        apiKey: "AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",
+        authDomain: "closer-to-market.firebaseapp.com",
+        projectId: "closer-to-market",
+        storageBucket: "closer-to-market.firebasestorage.app",
+        messagingSenderId: "919367487706",
+        appId: "1:919367487706:web:aac9f57f40737a8a6ed5e3",
+        measurementId: "G-2SVYH6WSTR"
+      };
       
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
