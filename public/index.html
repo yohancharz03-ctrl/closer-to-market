@@ -40,27 +40,14 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <!-- Firebase SDK & Firestore Database Integration -->
+    <!-- Shared browser configuration is served from Netlify environment variables. -->
+    <script src="/firebase-config.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-      
-      <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-      import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-      
-      const firebaseConfig = {
-        apiKey: "AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",
-        authDomain: "closer-to-market.firebaseapp.com",
-        projectId: "closer-to-market",
-        storageBucket: "closer-to-market.firebasestorage.app",
-        messagingSenderId: "919367487706",
-        appId: "1:919367487706:web:aac9f57f40737a8a6ed5e3",
-        measurementId: "G-2SVYH6WSTR"
-      };
-      
+
+      const firebaseConfig = window.CTM_FIREBASE_CONFIG;
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       const storage = getStorage(app);
@@ -3641,7 +3628,7 @@ const CUSTOM_ICE=null;
 window.CTM_ICE=CUSTOM_ICE||[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp','turns:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
 const USE_FN=true,USE_STORAGE=false; /* geuza kuwa true ukihamia Blaze + deploy functions */
 const DEMO=JSON.parse(JSON.stringify({v:vendorsList,p:productsList,r:vendorReelsList}));
-const app=getApps().length?getApp():initializeApp({apiKey:"AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",authDomain:"closer-to-market.firebaseapp.com",projectId:"closer-to-market",storageBucket:"closer-to-market.firebasestorage.app",messagingSenderId:"919367487706",appId:"1:919367487706:web:aac9f57f40737a8a6ed5e3"});
+const app=getApps().length?getApp():initializeApp(window.CTM_FIREBASE_CONFIG);
 if(APPCHECK_KEY){try{const ac=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');ac.initializeAppCheck(app,{provider:new ac.ReCaptchaV3Provider(APPCHECK_KEY),isTokenAutoRefreshEnabled:true});}catch(e){console.warn('appcheck',e);}}
 const auth=getAuth(app),db=getFirestore(app),storage=getStorage(app),fns=getFunctions(app),C=window.__ctm,KEY='ctm_store_v14',SKEY='ctm_session_v11';
 const COLS=['accounts','products','reels','stories','orders','chats','notifs','requests','invites','complaints','messages','lives','liveMsgs','ledger','offers','security','private','reviews','feedback','verifications'];
