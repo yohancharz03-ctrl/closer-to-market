@@ -55,7 +55,10 @@ CLOSER MARKET - TOLEO V36
 5c) ARIFA ZA NJE YA APP (PUSH) - app imefungwa/imezimwa
  - Seva inatuma push kwa: notification zote (oda, malipo, ada, mkopo, ombi la kutoa pesa...) NA ujumbe mpya wa chat
    (kichwa = jina la duka/mtu, ujumbe = maandishi mafupi; ikibonyezwa inafungua chat husika).
- - Push inatumwa mara moja baada ya kila tukio la seva (si kusubiri dakika moja); push-sweep ya kila dakika inabaki kama kinga.
+ - Push inatumwa mara moja baada ya kila tukio la seva. Ujumbe wa chat unaandikwa na app moja kwa moja Firestore (hauendi kwa seva), kwa hiyo
+   app inaiomba seva itume push sekunde ~1 baada ya kutuma ujumbe (na tena sekunde ~3.5 kama kinga). push-sweep ya kila dakika inabaki kama kinga ya mwisho.
+ - Token ya kifaa inahifadhiwa na seva yenyewe (/api/push-token), si kwa Firestore rules pekee. Kama seva haiwezi kuihifadhi, menyu ya
+   "Arifa za Nje ya App" inakuambia (mara nyingi ni FIREBASE_SERVICE_ACCOUNT haipo Netlify).
  - Token za vifaa zilizokufa zinafutwa zenyewe.
  - MASHARTI (bila haya push haitafanya kazi, na seva siwezi kuyaweka kwa niaba yako):
    1. Admin aweke Web Push key (VAPID): Firebase Console > Project settings > Cloud Messaging > Web Push certificates > Generate key pair,

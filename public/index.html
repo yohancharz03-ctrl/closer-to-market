@@ -47,14 +47,14 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
       import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
       
       const firebaseConfig = {
-        apiKey: "AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",
-        authDomain: "closer-to-market.firebaseapp.com",
-        projectId: "closer-to-market",
-        storageBucket: "closer-to-market.firebasestorage.app",
-        messagingSenderId: "919367487706",
-        appId: "1:919367487706:web:aac9f57f40737a8a6ed5e3",
-        measurementId: "G-2SVYH6WSTR"
-      };
+  apiKey: window.ENV ? window.ENV.FIREBASE_API_KEY : process.env.FIREBASE_API_KEY,
+  authDomain: window.ENV ? window.ENV.FIREBASE_AUTH_DOMAIN : process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: window.ENV ? window.ENV.FIREBASE_PROJECT_ID : process.env.FIREBASE_PROJECT_ID,
+  storageBucket: window.ENV ? window.ENV.FIREBASE_STORAGE_BUCKET : process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: window.ENV ? window.ENV.FIREBASE_MESSAGING_SENDER_ID : process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: window.ENV ? window.ENV.FIREBASE_APP_ID : process.env.FIREBASE_APP_ID,
+  measurementId: "G-2SVYH6WSTR"
+};
       
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
@@ -3921,6 +3921,7 @@ window.ctmEnablePush=async manual=>{try{
   const reg=await navigator.serviceWorker.register('firebase-messaging-sw.js');await navigator.serviceWorker.ready;
   const m=getMessaging(app),tok=await getToken(m,{vapidKey:vk,serviceWorkerRegistration:reg}),me=C.me;if(!tok)return pst('notoken','Kifaa hakikupata token. Jaribu tena.');
   if(!(me.fcmTokens||[]).includes(tok)){me.fcmTokens=[...(me.fcmTokens||[]),tok].slice(-5);C.persist();}
+  try{const sv=await API('push-token',{token:tok});if(!sv.ok)throw new Error('seva');}catch(e){return pst('serverfail','Kifaa kimepata token lakini seva haikuweza kuihifadhi ('+(e.message||e)+'). Hakikisha Netlify ina FIREBASE_SERVICE_ACCOUNT.');}
   pushed=true;onMessage(m,()=>{/* ndani ya app arifa inatoka Firestore (ctmNotify) */});return pst('ok','Arifa za nje ya app zimewashwa kwenye kifaa hiki ✅');
  }catch(e){console.warn('push',e);return pst('error',((e.code||'')+' '+(e.message||e)).trim());}};
 window.addEventListener('click',()=>{if(pushed||!C.me||Date.now()-pushTry<30000)return;pushTry=Date.now();ctmEnablePush(true);});
@@ -3967,8 +3968,13 @@ setInterval(()=>{try{const m=C.me;if(USE_FN&&m&&['vendor','dalali'].includes(m.r
   const o=document.createElement('div');o.id='ctm-onb';o.style.cssText='position:fixed;inset:0;z-index:99989;background:#000d;display:flex;align-items:center;justify-content:center;padding:16px';document.body.appendChild(o);
   const draw=()=>{const s=S[i];o.innerHTML='<div style="background:#0f172a;border:1px solid #1e293b;border-radius:20px;padding:22px;max-width:360px;width:100%;color:#fff;text-align:center"><p style="font-size:44px">'+s[0]+'</p><p style="font-weight:800;font-size:17px;margin:8px 0">'+s[1]+'</p><p style="color:#cbd5e1;font-size:13px;line-height:1.5">'+s[2]+'</p><p style="color:#475569;margin:12px 0">'+S.map((_,k)=>k===i?'●':'○').join(' ')+'</p><div style="display:flex;gap:8px"><button id="ob-s" style="flex:1;padding:11px;border-radius:12px;background:#334155;color:#fff;font-weight:700">Ruka</button><button id="ob-n" style="flex:2;padding:11px;border-radius:12px;background:#10b981;color:#020617;font-weight:800">'+(i<S.length-1?'Endelea':'Nimeelewa')+'</button></div></div>';
    const end=()=>{try{localStorage.setItem('ctm_onb1','1');}catch(e){}o.remove();};o.querySelector('#ob-s').onclick=end;o.querySelector('#ob-n').onclick=()=>{if(i<S.length-1){i++;draw();}else end();};};draw();},2500);}}catch(e){}
- /* 5. Arifa: omba server itume push kwa notif mpya */
- (function(){const C=window.__ctm;if(!C||!C.persist)return;let last='',t=null;const op=C.persist;C.persist=function(){const r=op.apply(this,arguments);try{const n=(C.S&&C.S.notifs)||[],k=n.length+':'+(n[0]&&n[0].id);if(k!==last){last=k;clearTimeout(t);t=setTimeout(()=>{if(window.__api&&C.me)window.__api('push',{}).catch(()=>{});},2500);}}catch(e){}return r;};})();
+ /* 5. Arifa: omba server itume push mara moja kwa notif mpya NA kwa ujumbe wa chat ninaoutuma (ujumbe unaandikwa moja kwa moja Firestore, hauendi kwa seva) */
+  (function(){const C=window.__ctm;if(!C||!C.persist)return;let last='',lastM='',t=null,t2=null,t3=null;const op=C.persist,ping=()=>{if(window.__api&&C.me)window.__api('push',{}).catch(()=>{});};
+    C.persist=function(){const r=op.apply(this,arguments);try{
+      const n=(C.S&&C.S.notifs)||[],k=n.length+':'+(n[0]&&n[0].id);if(k!==last){last=k;clearTimeout(t);t=setTimeout(ping,900);}
+      const mm=(C.S&&C.S.msgs)||{};let mt=0;if(C.me)for(const c in mm)(mm[c]||[]).forEach(m=>{if(m.from===C.me.id&&(m.ts||0)>mt)mt=m.ts||0;});
+      if(lastM===''){if(C.me)lastM=String(mt);}else if(String(mt)!==lastM){lastM=String(mt);if(mt){clearTimeout(t2);clearTimeout(t3);t2=setTimeout(ping,900);t3=setTimeout(ping,3500);}}
+    }catch(e){}return r;};})();
 })();
 </script>
 </body>

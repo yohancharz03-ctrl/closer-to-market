@@ -77,6 +77,8 @@ const handler0=async ev=>{
     return R(200,{ok:true,parsed:true,settled:r});}
   let u;try{u=await admin.auth().verifyIdToken(String((ev.headers.authorization||'').replace('Bearer ','')));}catch(e){return R(401,{error:'Ingia kwanza'});}
   const me=(await db.doc('accounts/'+u.uid).get()).data();if(!me)return R(403,{error:'Akaunti haipo'});
+  if(route==='push-token'){const tk=String(body.token||'');if(tk.length<40||tk.length>4096)return R(400,{error:'Token si sahihi'});
+    try{const ref=P(u.uid),ex=((await ref.get()).data()||{}).fcmTokens||[],all=[...new Set([...ex.filter(Boolean),tk])].slice(-5);await ref.set({fcmTokens:all},{merge:true});return R(200,{ok:true,count:all.length});}catch(e){return R(500,{error:e.message});}}
   if(route==='push-test'){try{const r=await require('../lib/push').sendTo(db,admin,u.uid,{title:'Jaribio la Arifa ✅',body:'Ukiona hii ukiwa nje ya app, arifa za nje zinafanya kazi.',kind:'mengine',tag:'ctm-test'});return R(200,r);}catch(e){return R(500,{error:e.message});}}
   if(route==='wd'){ // MAOMBI YA KUTOA PESA (admin tu): list | paid | reject (rudisha pesa kwenye wallet)
     if(me.role!=='admin')return R(403,{error:'Admin tu'});
