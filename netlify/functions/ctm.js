@@ -1,5 +1,5 @@
 /* CTM Trust-Flow: seva ya malipo (Netlify Function). Njia:
-   POST /api/sms-in   (Forwarder, header x-secret)  -> inahifadhi SMS halisi ya CTM
+   POST|GET /api/sms-in  (Forwarder; siri kwa header x-secret / Bearer / ?secret=) -> inahifadhi SMS halisi ya CTM
    POST /api/claim    (mteja, Bearer idToken)       -> {text, mode:'deposit'|'order'|'fee', orderIds:[]}  (fee = ada ya duka/deni la usajili)
    POST /api/admin    (admin, Bearer idToken)       -> {action:'approve'|'reject', txId}
    Env: FIREBASE_SERVICE_ACCOUNT (JSON), SMS_SECRET */
@@ -10,19 +10,63 @@ const rid=()=>Date.now()*1000+Math.floor(Math.random()*1000),P=u=>db.doc('privat
 /* Msomaji wa SMS (mitandao yote). Kinachoshindikana kinaenda kwa admin. */
 function parse(t){t=String(t||'').replace(/\s+/g,' ');
   const tok=(t.match(/\b[A-Za-z0-9][A-Za-z0-9.]{7,24}[A-Za-z0-9]\b/g)||[]).find(x=>/[A-Za-z]/.test(x)&&/\d/.test(x)&&!/^(\+?255|0)\d+$/.test(x));
-  const id=(t.match(/(?:Transaction ID|Muamala|Miamala|Trans(?:action)? ?(?:ID|No)|Reference|Kumbukumbu|Ref|TxnId|TID)[:.\s#-]*([A-Za-z0-9][A-Za-z0-9.]{6,24}[A-Za-z0-9])/i)||[])[1]||tok;
+  const LAB='(?:Transaction ID|Transaction No|Trans(?:action)? ?(?:ID|No)|Muamala ID|Muamala|Miamala|Reference(?: No)?|Kumbukumbu|Ref(?: No)?\\.?|TxnId|Txn ID|Trx ?ID|TID)';
+  const id=(t.match(new RegExp(LAB+'[:.\\s#-]*(?:ID|No|namba|nambari|number)?[:.\\s#-]*([A-Za-z0-9][A-Za-z0-9.]{6,24}[A-Za-z0-9])','i'))||[])[1]||tok;
   const am=(t.match(/(?:TZS|Tshs?)\.?\s?([\d][\d,]*(?:\.\d+)?)/i)||t.match(/([\d][\d,]*(?:\.\d+)?)\s?(?:TZS|Tshs?)/i)||[])[1];
-  const fr=(t.match(/(?:kutoka kwa|kutoka|from)\s+(.+?)(?=\s+(?:tarehe|mnamo|saa|on|at)\b|\s*\.\s*$|$)/i)||[])[1]||'';
-  const src=(fr.split(/[:,-]/)[0]||'').trim().slice(0,30),nm=(fr.match(/(?:\s-\s*|Jina\s*:?\s*)([^*]*)$/i)||[])[1];
+  const fr=(t.match(/(?:kutoka kwa|kutoka|from)\s+(.+?)(?=\s+(?:tarehe|mnamo|saa|on|at|Salio|Balance|New|Muamala|Kumbukumbu|Ref|Transaction|Trans|kwa|for|Lipa|malipo)\b|\s*\.\s|\s*\.\s*$|$)/i)||[])[1]||'';
+  const src=(fr.split(/[:,-]/)[0]||'').trim().slice(0,30);
+  const nm=fr.replace(/(?:\+?255|0)[67]\d{8}/g,' ').replace(/[^A-Za-z ]/g,' ').replace(/\s+/g,' ').trim().slice(0,40);
   const ph=(t.match(/(?:\+?255|0)[67]\d{8}/)||[])[0];
   const dt=(t.match(/\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}(?:\s+(?:saa\s+|at\s+)?\d{1,2}[:.]\d{2})?/i)||[])[0];
   const fe=(t.match(/Ada\s+Jumla\s+(?:TZS|Tshs?)\.?\s?([\d,]+(?:\.\d+)?)/i)||[])[1];
-  return{fee:fe?Math.round(parseFloat(fe.replace(/,/g,''))):0,txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:(nm||'').replace(/^Jina\s*/i,'').replace(/[.*]+/g,'').trim(),phone:ph?ph.slice(-9):'',date:dt||''};}
+  return{fee:fe?Math.round(parseFloat(fe.replace(/,/g,''))):0,txId:id&&id.toUpperCase(),amount:am?Math.round(parseFloat(am.replace(/,/g,''))):0,src,name:nm,phone:ph?ph.slice(-9):'',date:dt||''};}
+/* Pesa iliyoingia au iliyotoka? Pesa iliyotoka (umetuma, withdraw, umelipa...) HAIKUBALIWI kamwe kama malipo. */
+const IN_RE=/(received|umepokea|imepokelewa|umepokelewa|zimeingia|imeingia|umewekewa|credited|deposited|umetumiwa)/i,OUT_RE=/(\bsent to\b|umetuma|imetumwa kwa|umelipa|withdraw|umetoa|imetolewa|paid to|bill payment|airtime|umenunua)/i;
+const direction=t=>{const i=IN_RE.test(t),o=OUT_RE.test(t);return i&&!o?'in':o&&!i?'out':i&&o?'mixed':'unknown';};
+/* Mtumaji anayeruhusiwa: majina ya mitandao ya pesa/benki (mf. MPESA, TIGOPESA, AirtelMoney, HALOPESA). Namba za kawaida za simu ZINAKATALIWA
+   (mtu angeweza kutuma SMS feki kwenye simu ya kupokea). Ongeza zaidi kwa env SMS_SENDERS="15200,JINA"; SMS_ALLOW_ANY=1 inazima ukaguzi (majaribio tu). */
+const SENDERS=/mpesa|m-pesa|vodacom|tigo|mixx|yas|airtel|halo|ttcl|t-pesa|tpesa|azam|selcom|crdb|nmb|nbc|equity|stanbic|exim|dtb|absa/i;
+const okSender=f=>{const x=String(f||'').replace(/\s/g,'');if(process.env.SMS_ALLOW_ANY==='1')return true;if(!x)return false;
+  if((process.env.SMS_SENDERS||'').split(',').some(y=>y.trim()&&x.toLowerCase()===y.trim().toLowerCase().replace(/\s/g,'')))return true;
+  if(/^\+?\d[\d-]{4,}$/.test(x))return false;return SENDERS.test(x);};
+const pickF=(o,ks)=>{for(const k of ks){const v=o&&o[k];if(v!=null&&String(v).trim()!=='')return String(v);}return'';};
+function readBody(ev){let raw=ev.body||'';if(ev.isBase64Encoded)raw=Buffer.from(raw,'base64').toString('utf8');raw=String(raw);
+  try{const j=JSON.parse(raw);if(j&&typeof j==='object'&&!Array.isArray(j))return j;}catch(e){}
+  if(/application\/x-www-form-urlencoded/i.test((ev.headers||{})['content-type']||'')||/^[\w.\[\]-]+=/.test(raw.trim())){try{return Object.fromEntries(new URLSearchParams(raw));}catch(e){}}
+  const tx=raw.match(/"(?:text|message|body|content|msg|sms)"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"|\}\s*$)/),fr=raw.match(/"(?:from|sender|address)"\s*:\s*"([\s\S]*?)"\s*(?:,|\})/); // JSON mbovu (mstari mpya ndani ya ujumbe)
+  if(tx)return{text:tx[1],from:fr?fr[1]:''};return raw.trim()?{text:raw}:{};}
+const safeEq=(a,b)=>{a=Buffer.from(String(a||''));b=Buffer.from(String(b||''));return a.length===b.length&&require('crypto').timingSafeEqual(a,b);};
+/* Njia ya SMS Forwarder: POST au GET /api/sms-in (siri: header x-secret, Authorization: Bearer, au ?secret=). Inakubali JSON, form au maandishi matupu. */
+async function smsIn(ev){
+  const sec=process.env.SMS_SECRET;if(!sec)return R(500,{error:'SMS_SECRET haijawekwa kwenye Netlify'});
+  const h=Object.fromEntries(Object.entries(ev.headers||{}).map(([k,v])=>[k.toLowerCase(),v])),q=ev.queryStringParameters||{},b=ev.httpMethod==='POST'?readBody(ev):{};
+  const got=h['x-secret']||h['x-api-key']||String(h.authorization||'').replace(/^Bearer\s+/i,'')||q.secret||q.key||q.token||b.secret||b.key||'';
+  if(!safeEq(got,sec))return R(403,{error:'no'});
+  const st=db.doc('smsStatus/main');
+  if(ev.httpMethod!=='POST'){await st.set({pingAt:Date.now()},{merge:true});return R(200,{ok:true,message:'CTM SMS endpoint tayari. Tuma SMS kwa POST.'});}
+  const from=pickF(Object.assign({},q,b),['from','sender','address','number','originatingAddress','originating_address','source','sms_from','phone']).slice(0,40),
+        text=pickF(Object.assign({},q,b),['text','message','msg','body','content','sms','sms_body','smsBody','messageBody']).slice(0,1000);
+  if(!text.trim())return R(400,{error:'Hakuna maandishi ya SMS (text/message/body/content)'});
+  const p=parse(text),dir=direction(text),now=Date.now();let reason=null;
+  if(!okSender(from))reason='sender';else if(dir!=='in')reason=dir==='out'?'outgoing':dir==='mixed'?'ambiguous':'not-incoming';else if(!p.txId||!p.amount)reason='unparsed';
+  const hid=require('crypto').createHash('sha1').update(from+'|'+text).digest('hex').slice(0,24),rr=db.doc('rawSms/'+hid);
+  try{await rr.create({from,text:text.slice(0,600),parsed:p,dir,reason:reason||'',ts:now,n:1});}catch(e){await rr.update({n:inc(1),lastAt:now}).catch(()=>{});}
+  await st.set({lastAt:now,lastFrom:from,lastReason:reason||'ok',lastTx:p.txId||'',total:inc(1),...(reason?{}:{okCount:inc(1),lastOkAt:now})},{merge:true}).catch(()=>{});
+  if(reason){ // SMS inayoonekana ya pesa lakini imekataliwa: mwambie admin (kwa kiasi: 1 kwa dakika 10-30) ili asigundue muda mrefu baadaye kuwa forwarder haijaundwa sawa
+    try{const money=/(?:TZS|Tsh)/i.test(text)&&/(received|umepokea|imepokelewa|umepokelewa)/i.test(text),k=reason==='unparsed'?'unparsedNotifAt':reason==='sender'?'senderNotifAt':'';
+      if(k&&money){const sd=(await st.get()).data()||{};if(now-(sd[k]||0)>(reason==='unparsed'?10:30)*60000){await st.set({[k]:now},{merge:true});
+        await notifyAdmins(reason==='unparsed'?'SMS ya Pesa Haikueleweka ⚠':'SMS ya Pesa Imekataliwa ⚠',reason==='unparsed'?`Imepokelewa SMS inayoonekana ya pesa kutoka "${from}" lakini kiasi au Transaction ID hakikusomeka. Hakiki: Akaunti > SMS Forwarder.`:`SMS inayoonekana ya pesa imetoka kwa "${from||'(haijulikani)'}" ambaye si mtandao wa pesa unaojulikana. Kama ni sahihi, ongeza jina lake kwenye SMS_SENDERS (Netlify), na hakikisha template ya forwarder ina %from%.`,'Malipo');}}}catch(e){}
+    return R(200,{ok:true,parsed:false,reason});} // admin ataona pia kwenye SMS Forwarder / SMS & Madai ya Malipo
+  const ref=db.doc('bankTx/'+p.txId);let isNew=false;
+  if(!(await ref.get()).exists){await ref.create(Object.assign({},p,{text:text.slice(0,600),from,ts:now,usedBy:null}));isNew=true;}
+  const c=await db.doc('claims/'+p.txId).get();let r=null;if(c.exists&&['pending','short','review'].includes(c.data().status))r=await settle(p.txId,null);
+  if(isNew&&!(r&&r.status==='done'))try{await notifyAdmins('SMS ya Pesa Imeingia 💰',`TZS ${p.amount.toLocaleString()} kutoka ${p.name||p.phone||from||'?'} (Muamala ${p.txId}). ${c.exists?'Dai la mteja lipo ('+(r?r.status:c.data().status)+') - hakiki kwenye SMS & Madai ya Malipo.':'Bado hakuna dai la mteja; akibandika SMS litathibitishwa lenyewe.'}`,'Malipo');}catch(e){}
+  return R(200,{ok:true,parsed:true,new:isNew,settled:r});}
 const norm=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,'').split(' ').filter(x=>x.length>2);
 const note=(t,a,title,details,cat)=>{const id=rid();t.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:cat||'Oda & Malipo',details,read:false,ts:Date.now()});};
 const SHOP_FEE=10000,DAY=864e5,FEE_DAYS=90;
-async function notifyAdmins(title,details){const q=await db.collection('accounts').where('role','==','admin').get(),b=db.batch();
-  q.forEach(d=>{const a=d.data(),id=rid();b.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:'Usajili',details,read:false,ts:Date.now()});});await b.commit();}
+async function notifyAdmins(title,details,cat){const q=await db.collection('accounts').where('role','==','admin').get(),b=db.batch();
+  q.forEach(d=>{const a=d.data(),id=rid();b.set(db.doc('notifs/'+id),{id,toId:a.id,toUid:a.uid,title,category:cat||'Usajili',details,read:false,ts:Date.now()});});await b.commit();}
 const feeLabel=async uid=>{const a=(await db.doc('accounts/'+uid).get()).data()||{};return (a.shopName||a.name||'Duka')+' ('+(a.name||'')+')';};
 const led=(t,kind,amount,ref,n)=>{const id=rid();t.set(db.doc('ledger/'+id),{id,kind,amount,ref:String(ref||''),note:n||'',ts:Date.now()});};
 
@@ -66,17 +110,15 @@ async function settle(txId,claim,force){
 const handler0=async ev=>{
   try{init();}catch(e){return R(500,{error:'Seva: '+e.message});}db=admin.firestore();inc=admin.firestore.FieldValue.increment;union=admin.firestore.FieldValue.arrayUnion;
   const route=(ev.path||'').split('/').pop(),body=(()=>{try{return JSON.parse(ev.body||'{}')}catch(e){return{}}})();
+  if(route==='sms-in'||route==='sms'){try{return await smsIn(ev);}catch(e){console.warn('sms-in',e);return R(500,{error:e.message});}}
   if(ev.httpMethod!=='POST')return R(405,{error:'POST tu'});
-  if(route==='sms-in'){
-    if(!process.env.SMS_SECRET||ev.headers['x-secret']!==process.env.SMS_SECRET)return R(403,{error:'no'});
-    const p=parse(body.text);await db.collection('rawSms').add({from:String(body.from||''),text:String(body.text||'').slice(0,600),parsed:p,ts:Date.now()});
-    if(!p.txId||!p.amount)return R(200,{ok:true,parsed:false}); // admin ataona kwenye rawSms
-    const ref=db.doc('bankTx/'+p.txId);
-    if(!(await ref.get()).exists)await ref.create(Object.assign({},p,{text:String(body.text).slice(0,600),ts:Date.now(),usedBy:null}));
-    const c=await db.doc('claims/'+p.txId).get();let r=null;if(c.exists&&['pending','short','review'].includes(c.data().status))r=await settle(p.txId,null);
-    return R(200,{ok:true,parsed:true,settled:r});}
   let u;try{u=await admin.auth().verifyIdToken(String((ev.headers.authorization||'').replace('Bearer ','')));}catch(e){return R(401,{error:'Ingia kwanza'});}
   const me=(await db.doc('accounts/'+u.uid).get()).data();if(!me)return R(403,{error:'Akaunti haipo'});
+  if(route==='sms-status'||route==='sms-test'){if(me.role!=='admin')return R(403,{error:'Admin tu'});
+    if(route==='sms-test'){const tx=String(body.text||'').slice(0,1000),fr=String(body.from||'').slice(0,40),p=parse(tx),dir=direction(tx),sOk=okSender(fr);
+      const reason=!sOk?'sender':dir!=='in'?(dir==='out'?'outgoing':dir==='mixed'?'ambiguous':'not-incoming'):(!p.txId||!p.amount)?'unparsed':'';return R(200,{parsed:p,dir,senderOk:sOk,accepted:!reason,reason});}
+    const stt=(await db.doc('smsStatus/main').get()).data()||{},rs=await db.collection('rawSms').orderBy('ts','desc').limit(10).get();
+    return R(200,{configured:!!process.env.SMS_SECRET,allowAny:process.env.SMS_ALLOW_ANY==='1',extraSenders:(process.env.SMS_SENDERS||'').split(',').filter(Boolean).length,status:stt,recent:rs.docs.map(d=>{const x=d.data();return{from:x.from,text:x.text,parsed:x.parsed,dir:x.dir,reason:x.reason,ts:x.ts,n:x.n||1};})});}
   if(route==='push-token'){const tk=String(body.token||'');if(tk.length<40||tk.length>4096)return R(400,{error:'Token si sahihi'});
     try{const ref=P(u.uid),ex=((await ref.get()).data()||{}).fcmTokens||[],all=[...new Set([...ex.filter(Boolean),tk])].slice(-5);await ref.set({fcmTokens:all},{merge:true});return R(200,{ok:true,count:all.length});}catch(e){return R(500,{error:e.message});}}
   if(route==='push-test'){try{const r=await require('../lib/push').sendTo(db,admin,u.uid,{title:'Jaribio la Arifa ✅',body:'Ukiona hii ukiwa nje ya app, arifa za nje zinafanya kazi.',kind:'mengine',tag:'ctm-test'});return R(200,r);}catch(e){return R(500,{error:e.message});}}

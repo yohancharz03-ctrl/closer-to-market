@@ -1,0 +1,53 @@
+SMS FORWARDER - KUUNGANISHA SIMU YA KUPOKEA PESA NA CTM
+=======================================================
+
+JINSI INAVYOFANYA KAZI (hakuna aggregator wala API ya kampuni ya simu)
+ 1. Mteja analipa kwa USSD kwenye namba yako ya kupokea (nje ya app).
+ 2. Simu yako ya kupokea inapata SMS halisi ya pesa iliyoingia (kutoka M-PESA / TIGOPESA-MIXX / AirtelMoney / HALOPESA).
+ 3. App ya SMS Forwarder kwenye simu hiyo inaituma papo hapo kwa seva ya CTM: https://SITE-YAKO.netlify.app/api/sms-in
+ 4. Seva inasoma SMS (kiasi, Transaction ID, jina/namba ya mlipaji), inahakikisha ni pesa iliyoingia (si iliyotoka), na inaihifadhi kama muamala halisi.
+ 5. Mteja anabandika SMS aliyopata kwenye app ya CTM. Seva inalinganisha Transaction ID na SMS halisi ya forwarder.
+    Zikilingana (na jina/namba ya mlipaji inalingana na akaunti) malipo yanathibitishwa yenyewe: oda, deposit, ada ya duka au deni la mkopo.
+    Hazilingani/zinatofautiana = linaenda kwa Admin kuhakikiwa. Ikiwa SMS halisi bado haijafika, dai linasubiri na litathibitishwa SMS ikifika.
+ 6. Admin anapata notification (na push) SMS ya pesa inapoingia bila dai la mteja bado, na pale SMS inapokataliwa/haieleweki.
+
+HATUA ZA KUUNGANISHA
+ A. Netlify > Site settings > Environment variables:
+      SMS_SECRET = neno refu la siri (herufi 24+). Bila hii seva inajibu "SMS_SECRET haijawekwa".
+      (hiari) SMS_SENDERS = majina ya ziada ya watumaji yanayoruhusiwa, kwa koma, mf. "15200,NMBBANK".
+      USIWEKE SMS_ALLOW_ANY=1 kwenye matumizi halisi (inazima ukaguzi wa mtumaji).
+    Kisha Deploy upya.
+ B. Simu ya kupokea (Android, yenye SIM ya namba ya malipo): weka app ya SMS forwarder inayotuma kwa URL (webhook), mf. "SMS to URL forwarder".
+      URL:     https://SITE-YAKO.netlify.app/api/sms-in      (POST)
+      Header:  x-secret: <SMS_SECRET yako>      (kama app haiwezi header: ongeza ?secret=SMS_SECRET kwenye URL)
+      Body (JSON):  {"from":"%from%","text":"%text%","sentStamp":"%sentStamp%"}
+      (majina ya vigezo (%from%, %text%) hutofautiana kwa app; seva pia inakubali sender/address/number kwa mtumaji na message/body/content kwa maandishi,
+       na inakubali JSON, form-urlencoded na maandishi matupu.)
+      Chuja: peleka SMS za M-PESA, TIGOPESA/MIXX, AirtelMoney, HALOPESA tu.
+      Zima uboreshaji wa betri kwa app hiyo, ruhusu kufanya kazi nyuma na kuanza yenyewe, na weka simu ikiwa na intaneti.
+ C. Jaribu muunganisho: fungua kwenye browser  https://SITE-YAKO.netlify.app/api/sms-in?secret=SIRI_YAKO
+      Ukiona "CTM SMS endpoint tayari" muunganisho ni mzuri.
+ D. Kwenye app ya CTM (admin): Akaunti > "SMS Forwarder (Hali & Mipangilio)":
+      - inaonyesha seva tayari au la, SMS ya mwisho ilipokelewa lini, idadi iliyosomwa, SMS 10 za mwisho,
+      - kisanduku cha "Jaribu kusoma SMS": bandika SMS halisi ya mtandao wako uone inasomwa vipi (haihifadhiwi). FANYA HIVI kwa kila mtandao.
+      - kitufe cha "Onyesha upya" (na inajisasisha yenyewe kila sekunde 20).
+
+KAMA HAIFANYI KAZI
+ - Jibu 403 "no"                -> siri (SMS_SECRET) kwenye forwarder si sawa na ya Netlify.
+ - Jibu 500 SMS_SECRET...        -> haijawekwa Netlify / hukudeploy upya.
+ - "mtumaji si mtandao wa pesa"  -> forwarder haitumi %from% au inatuma namba ya kawaida; weka %from% au ongeza jina kwenye SMS_SENDERS.
+ - "pesa iliyotoka"             -> SMS ya kutuma/kulipa; haikubaliwi kama malipo (kwa makusudi).
+ - "ID/kiasi hakikusomeka"       -> muundo wa SMS ni tofauti; tuma SMS hiyo (bila namba za siri) nikuongezee muundo huo.
+ - Hakuna SMS kwa saa 24         -> simu imezimwa/haina intaneti, au betri imezuia app ya forwarder.
+ - SMS ileile ikitumwa mara mbili (forwarder ikijaribu tena) haidhuru: muamala mmoja tu unahifadhiwa.
+
+USALAMA
+ - Njia ya /api/sms-in inalindwa na SMS_SECRET. Ikivuja, mtu anaweza kutuma SMS za uongo zikakubaliwa kama pesa: ibadilishe mara moja.
+ - SMS kutoka kwa namba za kawaida za simu zinakataliwa, ili mtu asitume SMS feki kwenye simu yako ya kupokea.
+ - Kiasi kinachotumika ni kile cha SMS halisi ya forwarder, si cha mteja. Madai ya mkono (bila SMS halisi) yanahitaji Admin kuhakiki
+   dhidi ya SMS/benki halisi kabla ya kuidhinisha.
+
+KIKOMO CHA UKWELI
+ - Msomaji wa SMS ni wa kujifunza muundo (kiasi cha TZS/Tsh, Transaction ID, "umepokea/received", "kutoka/from"). Nimeujaribu kwa mifano ya
+   M-Pesa, Mixx by Yas (Tigo), Airtel Money na HaloPesa niliyoiandika kutoka kwenye kumbukumbu; SMS halisi za mitandao zinaweza kutofautiana.
+   Ndiyo maana kisanduku cha "Jaribu kusoma SMS" kipo: jaribu SMS halisi kabla ya kupokea pesa za wateja.

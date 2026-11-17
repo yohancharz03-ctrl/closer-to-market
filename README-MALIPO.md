@@ -6,8 +6,10 @@
    - LIVEKIT_KEY, LIVEKIT_SECRET (kutoka LiveKit Cloud); LIVEKIT_URL = wss://closer-to-market-6f7j9wvm.livekit.cloud
    - (hiari) CTM_PAY, CTM_HELP – zinatumika kama admin hajaweka ndani ya app
 3. Firebase Console > Firestore > Rules: bandika `firestore.production.rules` > Publish.
-4. SMS Forwarder (simu ya Android ya CTM): URL `https://SITE.netlify.app/api/sms-in`, header `x-secret: SMS_SECRET`,
-   JSON `{"from":"%from%","text":"%text%"}`, chuja SMS za M-PESA/Vodacom pekee, ruhusu kufanya kazi nyuma.
+4. SMS Forwarder (simu ya Android ya CTM yenye SIM ya kupokea): URL `https://SITE.netlify.app/api/sms-in` (POST), siri kwa header `x-secret: SMS_SECRET`
+   (au `?secret=SMS_SECRET` kwenye URL), Body JSON `{"from":"%from%","text":"%text%","sentStamp":"%sentStamp%"}`. Chuja SMS za M-PESA, TIGOPESA/MIXX,
+   AirtelMoney, HALOPESA tu; zima uboreshaji wa betri; ruhusu kufanya kazi nyuma. Angalia hali kwenye app: Akaunti (admin) > "SMS Forwarder (Hali & Mipangilio)".
+   Env za hiari: SMS_SENDERS="15200,JINA" (watumaji wa ziada), SMS_ALLOW_ANY=1 (majaribio tu; inazima ukaguzi wa mtumaji).
 5. Ingia kama admin > Akaunti > Mipangilio: "Namba za Malipo & Help", "SMS & Madai ya Malipo", "Weka Story ya CTM".
 
 ## Live (LiveKit)

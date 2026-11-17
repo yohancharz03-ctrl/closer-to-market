@@ -82,6 +82,48 @@ CLOSER MARKET - TOLEO V36
  - Pesa halisi bado unaituma wewe (Admin) kwa mkono kupitia mtandao husika; app inakuonyesha tu namba sahihi na kufuatilia hali.
    Hakuna aggregator wala malipo ya kiotomatiki ya kutoa pesa.
 
+5e) SMS FORWARDER - UUNGANISHO KAMILI (simu ya kupokea -> seva ya CTM -> uthibitisho wa malipo)
+ Mtiririko: mteja analipa kwa USSD -> simu yako ya kupokea inapata SMS halisi ya pesa -> app ya SMS Forwarder inaipeleka kwa /api/sms-in
+ -> seva inaisoma (ID, kiasi, jina, simu) na kuihifadhi kama muamala halisi (bankTx) -> mteja anabandika SMS yake kwenye app -> seva inalinganisha
+ ID/jina/simu -> malipo (oda, deposit, ada, deni la mkopo) yanakubaliwa yenyewe, na kila upande unapata notification. Admin anaona kila kitu.
+ MABADILIKO YA TOLEO HILI:
+ - /api/sms-in sasa inakubali POST na GET; JSON, form-urlencoded au maandishi matupu; majina mengi ya sehemu (text/message/body/content, from/sender/address);
+   JSON mbovu (SMS yenye mstari mpya) pia inasomwa. Siri: header x-secret, Authorization: Bearer, au ?secret= (kwa app zisizoweza kuweka header). Ulinganisho wa siri ni salama (timing-safe).
+ - GET /api/sms-in?secret=SIRI kwenye browser ya simu = jaribio la muunganisho ("CTM SMS endpoint tayari").
+ - SMS ileile ikirudiwa na forwarder haiundi muamala mara mbili (rawSms inahesabu marudio).
+ - ULINZI MPYA: (1) mtumaji lazima awe jina la mtandao/benki (MPESA, TIGOPESA, MIXX, AirtelMoney, HALOPESA...). SMS kutoka namba ya kawaida ya simu inakataliwa
+   (vinginevyo mtu angeweza kutuma SMS feki kwenye simu yako ya kupokea ikakubaliwa kama pesa halisi). (2) Pesa iliyotoka ("sent to", "umetuma", withdraw...)
+   haikubaliwi kamwe kama malipo. (3) SMS isiyoeleweka ("received" na "sent" pamoja) inabaki kwa Admin kuhakiki.
+   SMS zilizokataliwa zinaonekana kwenye "SMS & Madai ya Malipo" na kwenye skrini mpya ya SMS Forwarder pamoja na sababu.
+ - Msomaji ameboreshwa: Transaction ID za Tigo ("Muamala ID: 123...") sasa zinasomwa; majina ya mlipaji ("JUMA ALLY") yanatolewa vizuri (awali yalikuwa tupu, hivyo ulinganishaji wa jina haukufanya kazi).
+ - SKRINI MPYA ya admin: Akaunti > "📡 SMS Forwarder (Hali & Mipangilio)": hali ya seva, SMS ya mwisho ilipokelewa lini (onyo kama zaidi ya saa 24),
+   URL/Body za kunakili, kisanduku cha "Jaribu kusoma SMS" (bandika SMS halisi uone ID/kiasi/jina vinavyosomwa bila kuhifadhi), na SMS 10 za mwisho.
+ HATUA ZA KUWEKA:
+   1. Netlify > Environment variables: SMS_SECRET = neno refu la siri (na FIREBASE_SERVICE_ACCOUNT kama ulivyokuwa). Deploy upya.
+   2. Simu ya kupokea: sakinisha app ya SMS Forwarder (mfano "SMS Forwarder"/android_income_sms_gateway_webhook yenye kiolezo cha JSON),
+      weka URL, siri, na body kama inavyoonyeshwa kwenye skrini ya app. Zima uboreshaji wa betri; iruhusu nyuma; SIM ya kupokea ibaki ndani ya simu hiyo.
+   3. Fungua URL?secret=... kwenye browser ya simu: lazima uone "CTM SMS endpoint tayari".
+   4. Tuma pesa ndogo halisi kwa namba ya malipo kutoka kila mtandao unaoutumia (M-Pesa, Tigo/Mixx, Airtel, Halo) na uone SMS inaonekana kama "✅ imesomwa" na ID/kiasi sahihi.
+   5. Muundo wa SMS za kila mtandao hubadilika. Kama SMS halisi inaonekana "ID/kiasi hakikusomeka", bandika kwenye "Jaribu kusoma SMS" na unitumie mfano ili msomaji urekebishwe.
+ KUMBUKA: Mimi sijajaribu na simu yenye app ya forwarder wala SMS halisi za mitandao; msomaji nimeujaribu kwa mifano ya muundo wa SMS za M-Pesa/Tigo/Airtel/Halo
+ ninaoujua, ambayo inaweza kutofautiana kidogo na halisi. Jina la mtumaji (sender ID) nalo linaweza kudanganywa kwa mitandao fulani ya SMS za wingi - ukaguzi huu unapunguza hatari, haukomeshi kabisa.
+
+5e) SMS FORWARDER (angalia SMS-FORWARDER.txt kwa hatua kamili)
+ - Njia /api/sms-in ilikuwepo; imeboreshwa: msomaji sasa anaelewa namba za muamala za tarakimu tupu (mf. Mixx "Kumbukumbu namba: 2411..."),
+   na jina la mlipaji halichanganywi na maneno ya ziada ("kwa malipo ya biashara").
+ - Admin anapata notification/push: "SMS ya Pesa Imeingia" (bado hakuna dai), "SMS ya Pesa Imekataliwa/Haikueleweka" (forwarder ina tatizo).
+ - Skrini ya SMS Forwarder ina kitufe cha Onyesha upya + inajisasisha yenyewe.
+ - Imejaribiwa hadi mwisho (hifadhidata bandia): siri mbaya, SMS kabla na baada ya dai, ada ya duka, kurudia SMS, SMS feki, pesa iliyotoka, form-urlencoded.
+
+5f) REELS: SHARE, VIUNGO, REELS ZANGU
+ - Share ya reel ilikuwa inatuma kiungo kisicho sahihi (cha live). Sasa: kiungo cha reel yenyewe (?reel=ID). Kinafungua reel hiyo moja kwa moja.
+   Chaguo: Tuma kwa mtu (Ujumbe, kwa mazungumzo yaliyopo au kutafuta mtu mpya), Weka kama Status (story ya masaa 24 yenye kiungo),
+   Shiriki kwa WhatsApp/app nyingine, Nakili kiungo.
+ - Kila kiungo (https://..., www..., au jina la tovuti kama ctm.app/x) kwenye chat, maelezo ya reel na stories kinabonyezeka. Viungo vya reel za CTM
+   vinafunguka ndani ya app. Maandishi yote yanasafishwa kwanza (hakuna HTML/msimbo hatari; ni http/https tu).
+ - Ikoni ya "Reels" kwenye akaunti ya mwenye duka/dalali sasa inaonyesha reels zake tu (kucheza, Share, Futa; pamoja na stories zake za masaa 24),
+   si reels za maduka yote. Kichupo cha chini "Reels" kinabaki kuonyesha reels za maduka yote.
+
 6) USALAMA (ukaguzi wa V36)
  Zilizofungwa kwenye toleo hili:
  - Pesa/wallet/deni/hali ya ada (walletBalance, tx, paymentStatus, registrationDebt, totalPaidTowardDebt, giftNo, needsPlan, paidUntil)
