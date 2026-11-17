@@ -1,6 +1,7 @@
 /* Service worker moja: PWA (kuweka kama app) + push ya FCM */
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js','https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
-firebase.initializeApp({apiKey:"AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",authDomain:"closer-to-market.firebaseapp.com",projectId:"closer-to-market",storageBucket:"closer-to-market.firebasestorage.app",messagingSenderId:"919367487706",appId:"1:919367487706:web:aac9f57f40737a8a6ed5e3"});
+importScripts('/firebase-config.js');
+firebase.initializeApp(self.CTM_FIREBASE_CONFIG);
 /* Arifa za nyuma (app imefungwa): kila arifa ina profile ya kategoria (Oda, Ujumbe, Malipo, Usajili...), inatoa sauti/mtetemo,
    na ikibonyezwa inafungua ukurasa husika ndani ya app (si ujumbe wa kawaida wa browser). */
 const CATS={oda:['📦','Oda','oda'],ujumbe:['💬','Ujumbe','ujumbe'],malipo:['💰','Malipo','akaunti'],usajili:['🏪','Usajili & Ada','akaunti'],huduma:['⭐','Huduma','akaunti'],usalama:['🛡','Usalama','akaunti'],mengine:['🔔','Taarifa','akaunti']};
@@ -14,6 +15,6 @@ self.addEventListener('notificationclick',e=>{e.notification.close();const d=e.n
 const CACHE='ctm-v39',SHELL=['./','index.html','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()).catch(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',e=>{const r=e.request,u=new URL(r.url);if(r.method!=='GET'||u.origin!==location.origin)return;
+self.addEventListener('fetch',e=>{const r=e.request,u=new URL(r.url);if(r.method!=='GET'||u.origin!==location.origin||u.pathname==='/firebase-config.js'||u.pathname==='/.netlify/functions/firebase-config')return;
   if(r.mode==='navigate'){e.respondWith(fetch(r).then(res=>{const cp=res.clone();caches.open(CACHE).then(c=>c.put('index.html',cp));return res;}).catch(()=>caches.match('index.html')));return;}
   e.respondWith(caches.match(r).then(m=>m||fetch(r).then(res=>{const cp=res.clone();caches.open(CACHE).then(c=>c.put(r,cp));return res;})));});
