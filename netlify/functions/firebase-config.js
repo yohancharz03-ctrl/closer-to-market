@@ -22,9 +22,9 @@ exports.handler = async (event) => {
   for (const [field, name] of Object.entries(fields)) {
     if (!process.env[name]?.trim()) {
       return {
-        statusCode: 503,
+        statusCode: 200,
         headers,
-        body: 'throw new Error("Firebase browser configuration is unavailable.");',
+        body: event.httpMethod === 'HEAD' ? '' : 'self.CTM_FIREBASE_CONFIG = null;', 
       };
     }
     config[field] = process.env[name].trim();

@@ -40,23 +40,19 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+    <!-- Load runtime configuration before either Firebase module initializes. -->
+    <script src="/.netlify/functions/firebase-config"></script>
     <!-- Firebase SDK & Firestore Database Integration -->
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { getFirestore, collection, addDoc, getDocs, setDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+if (window.CTM_FIREBASE_CONFIG) {
       
-      const firebaseConfig = {
-        apiKey: "AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",
-        authDomain: "closer-to-market.firebaseapp.com",
-        projectId: "closer-to-market",
-        storageBucket: "closer-to-market.firebasestorage.app",
-        messagingSenderId: "919367487706",
-        appId: "1:919367487706:web:aac9f57f40737a8a6ed5e3",
-        measurementId: "G-2SVYH6WSTR"
-      };
+      const firebaseConfig = window.CTM_FIREBASE_CONFIG;
       
-      const app = initializeApp(firebaseConfig);
+      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
       const db = getFirestore(app);
       const storage = getStorage(app);
       
@@ -72,9 +68,21 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
       window.uploadBytes = uploadBytes;
       window.getDownloadURL = getDownloadURL;
       console.log("Firebase Cloud Firestore & Storage zimeunganishwa kikamilifu kwenye CTM V10!");
-    </script>
+    
+}
+</script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+    <script>
+      if (!window.CTM_FIREBASE_CONFIG) {
+        window.CTM_CLOUD = false;
+        const notice = document.createElement('div');
+        notice.setAttribute('role', 'status');
+        notice.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:200;background:#78350f;color:white;padding:12px;text-align:center;font:14px sans-serif';
+        notice.textContent = 'Preview: Firebase is not configured. Sample content only; sign-in and cloud features are unavailable.';
+        document.body.appendChild(notice);
+      }
+    </script>
     <!-- WELCOME & LAUNCH SCREEN -->
     <div id="welcome-modal" class="fixed inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 z-[120] flex items-center justify-center p-4" style="display: flex;">
         <div class="bg-slate-900/90 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-6 text-center shadow-2xl backdrop-blur-md">
@@ -3657,6 +3665,8 @@ import {getFunctions,httpsCallable} from "https://www.gstatic.com/firebasejs/10.
 import {getStorage,ref as sref,uploadString,uploadBytes,getDownloadURL} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import {getMessaging,getToken,onMessage,isSupported} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 import {getFirestore,collection,doc,setDoc,getDoc,deleteDoc,onSnapshot,query,where,orderBy,limit,getDocs} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+if (window.CTM_FIREBASE_CONFIG) {
 window.CTM_CLOUD=true;try{localStorage.removeItem('ctm_store_v14');}catch(e){}
 const DEFAULT_ADMIN='ctm2026@gmail.com';
 const REQUIRE_VERIFIED_EMAIL=true; /* watumiaji wathibitishe email */
@@ -3673,7 +3683,8 @@ const CUSTOM_ICE=null;
 window.CTM_ICE=CUSTOM_ICE||[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp','turns:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
 const USE_FN=true,USE_STORAGE=false; /* geuza kuwa true ukihamia Blaze + deploy functions */
 const DEMO=JSON.parse(JSON.stringify({v:vendorsList,p:productsList,r:vendorReelsList}));
-const app=getApps().length?getApp():initializeApp({apiKey:"AIzaSyCMZ9q0QQU9v9ctyyTWjjkMCSZpvKt66Fs",authDomain:"closer-to-market.firebaseapp.com",projectId:"closer-to-market",storageBucket:"closer-to-market.firebasestorage.app",messagingSenderId:"919367487706",appId:"1:919367487706:web:aac9f57f40737a8a6ed5e3"});
+
+const app=getApps().length?getApp():initializeApp(window.CTM_FIREBASE_CONFIG);
 if(APPCHECK_KEY){try{const ac=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');ac.initializeAppCheck(app,{provider:new ac.ReCaptchaV3Provider(APPCHECK_KEY),isTokenAutoRefreshEnabled:true});}catch(e){console.warn('appcheck',e);}}
 const auth=getAuth(app),db=getFirestore(app),storage=getStorage(app),fns=getFunctions(app),C=window.__ctm,KEY='ctm_store_v14',SKEY='ctm_session_v11';
 const COLS=['accounts','products','reels','stories','orders','chats','notifs','requests','invites','complaints','messages','lives','liveMsgs','ledger','offers','security','private','reviews','feedback','verifications'];
@@ -4003,6 +4014,8 @@ window.ctmAdminWd=async()=>{const o=ov('<p style="font-weight:800;font-size:15px
   }catch(e){q$(o,'#o-l').textContent=e.message;}};load();};
 setInterval(()=>{try{const m=C.me;if(USE_FN&&m&&['vendor','dalali'].includes(m.role)&&!m.payout&&!window.__poNudged&&document.visibilityState==='visible'){window.__poNudged=1;ctmNotify({kind:'malipo',title:'Weka Lipa Namba ya Kupokea Pesa',body:'Ili Admin akutumie pesa unazotoa, weka Lipa Namba na jina la mtandao (Akaunti > Namba ya Kupokea Pesa).'});}}catch(e){}},9000);
 
+
+}
 </script>
 <script>
 /* ===== CTM V34: pinch ya ramani, badge ya Netlify, eneo la duka, maelekezo ya mwanzo, push ===== */
