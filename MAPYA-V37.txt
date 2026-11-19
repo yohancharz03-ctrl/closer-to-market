@@ -1,0 +1,23 @@
+V37 - MABADILIKO
+1) LIVE: WebRTC imerekebishwa (signaling kupitia Firestore 'liveSig'). LiveKit haijaondolewa:
+   ukiweka LIVEKIT_URL/KEY/SECRET inatumika kwanza; isipopatikana, WebRTC inachukua nafasi yenyewe.
+   Kubadili: window.CTM_LIVE_ENGINE = 'auto' | 'livekit' | 'webrtc'. WebRTC ni bora hadi watazamaji ~8-10; zaidi ya hapo tumia LiveKit.
+   Kiungo cha live (?live=ID) sasa kinafanya kazi.
+2) VIUNGO: ?shop= ?product= ?reel= ?offer= ?live=. Kwenye chat, story, reel na live chat kiungo kinaonekana kama kitufe
+   (🏪 Duka: ..., 🛍 Bidhaa, 🎬 Reel...) na kikibonyezwa kinafungua sehemu husika.
+   Share (🔗) kwenye duka, bidhaa, reel, live: tuma kwa mtu, weka Status, WhatsApp, nakili; reel pia "video yenyewe".
+3) QR YA DUKA: sasa ina kiungo ?shop=ID - ukiscan inafungua bidhaa za duka. Soko lina kitufe "Scan QR ya Duka".
+4) NAULI: inahesabiwa kwa umbali (public/fare.js + functions/fare.js - lazima ziwe nakala sawa).
+   Piki piki / Gari / Basi (basi inaonyesha stendi inapotua). Seva ndiyo inayotoza (placeOrder).
+   Muuzaji: Akaunti > Nauli (bei zake), na Oda > ✏️ Badilisha nauli (kabla mteja hajalipa) -> jumla inabadilika (function setDeliveryFee).
+   Mteja anaweza kuchagua "kujadili nauli kabla ya kulipa"; analipa baadaye kutoka Oda Zangu.
+   Makato ya CTM 5% sasa yanahesabiwa kwenye bei ya bidhaa tu (si nauli).
+DEPLOY: pakia folda nzima; functions (netlify/functions/fn.js inatumia functions/index.js) zitachukua fare.js.
+
+V38 (nyongeza)
+- Ujumbe wa "Preview: Firebase is not configured": unaonekana kwa sababu tovuti haipati mipangilio ya Firebase.
+  Suluhisho (chagua moja): (a) Netlify > Site settings > Environment variables: weka FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN,
+  FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET, FIREBASE_MESSAGING_SENDER_ID, FIREBASE_APP_ID, kisha deploy upya (folda NZIMA, si 'public' pekee,
+  la sivyo function ya firebase-config haipo); au (b) jaza public/firebase-config.static.js kwa thamani zako. Ujumbe sasa uko Kiswahili na unafungika (x).
+- Story Views & Likes (Akaunti ya muuzaji): inaonyesha idadi halisi ya watu tofauti walioona, likes na idadi ya story (masaa 24); ukibonyeza unaona kila story na orodha ya watu.
+- Soko: swipe kushoto/kulia sasa ukurasa unafuata kidole (Karibu <-> Mikoani), ukiachia mapema unarudi; kitufe cha Mikoani nacho kinateleza.

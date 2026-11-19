@@ -4,6 +4,15 @@ const {onSchedule}=require('firebase-functions/v2/scheduler');
 const admin=require('firebase-admin');(process.env.FIREBASE_SERVICE_ACCOUNT?require('../netlify/lib/init')():(admin.apps.length||admin.initializeApp()));
 const db=admin.firestore(),F=admin.firestore.FieldValue,inc=F.increment,union=F.arrayUnion,DAY=864e5;
 const FEE=.05,CASHBACK=.01,SHOP_FEE=10000,GIFT_SLOTS=15,GIFT_DAYS=30,FEE_DAYS=90,WD_MIN=50000,FREE_WD=2,selcom=a=>Math.max(500,Math.round(a*.015)); // makadirio ya Selcom
+const FARE=require('./fare.js'); /* hesabu ya nauli (nakala sawa na public/fare.js) */
+/* Nauli ya usafirishaji: inahesabiwa na SEVA kutoka umbali (eneo la mteja <-> duka) ili mteja asiweze kubadili bei. Muuzaji anaweza kuibadilisha baadaye kwa setDeliveryFee. */
+const deliveryFor=(boss,f,d,loc,goods)=>{
+  if(f==='Pickup')return{fee:0,mode:'pickup',km:0,est:false,region:'',stand:''};
+  const q=FARE.quote({lat:boss.lat,lng:boss.lng,locMarked:boss.locMarked,region:boss.region,distanceKm:boss.distanceKm,fare:boss.fare},{lat:loc?loc.lat:null,lng:loc?loc.lng:null,region:String(d.region||'')},goods);
+  let m=q.modes[String(d.mode||'')];if(!m||!m.ok)m=q.def?q.modes[q.def]:null;
+  if(!m)return{fee:Math.max(0,Math.round(+boss.baseDeliveryFee||3000)),mode:'legacy',km:q.km,est:true,region:q.cReg,stand:''};
+  return{fee:m.fee,mode:m.id,km:m.km,est:q.est,region:q.cReg,stand:m.stand||''};
+};
 const err=(c,m)=>new HttpsError(c,m),uidOf=r=>{if(!r.auth)throw err('unauthenticated','Ingia kwanza');const em=String(r.auth.token.email||'').toLowerCase();if(process.env.REQUIRE_VERIFIED_EMAIL!=='false'&&!r.auth.token.email_verified&&em!=='ctm2026@gmail.com')throw err('failed-precondition','Thibitisha email yako kwanza.');return r.auth.uid;};
 const rid=()=>Date.now()*1000+Math.floor(Math.random()*1000),P=uid=>db.doc('private/'+uid),mk=()=>new Date().toISOString().slice(0,7);
 const byId=(t,id)=>t.get(db.collection('accounts').where('id','==',+id).limit(1)).then(q=>{if(q.empty)throw err('not-found','Akaunti haipo');return q.docs[0];});
@@ -29,14 +38,28 @@ exports.placeOrder=onCall(async req=>{const uid=uidOf(req),d=req.data||{},items=
       if(!(v.isApproved||(!v.suspended&&v.autoApproveAt<=Date.now()))||v.suspended||v.paidUntil<Date.now())throw err('failed-precondition',`${v.shopName} halipatikani kwa sasa`);
       shops[vid]={v,parent:v.role==='dalali'?(await byId(t,v.parentId)).data():null};}
     const ids=[];
-    for(const [vid,g] of Object.entries(groups)){const {v,parent}=shops[vid],boss=parent||v,total=g.reduce((s,x)=>s+x.p.price*x.q,0),id='ORD-'+Math.floor(10000+Math.random()*90000),otp=String(Math.floor(1000+Math.random()*9000));
-      const o={id,customerId:m.id,customerUid:uid,customerName:m.name,vendorId:boss.id,vendorUid:boss.uid,vendor:boss.shopName,date:new Date().toLocaleDateString('en-GB'),ts:Date.now(),items:g.map(x=>x.p.name+(x.q>1?' x'+x.q:'')).join(', '),productImg:g[0].p.image||'',total,status:'Inasubiri Malipo',stage:1,payStatus:'PENDING',fulfillment:f,isConfirmedByOtp:false,loc,note:note0,isOffer:g.some(x=>x.offer)};
-      if(parent){o.brokerId=v.id;o.brokerUid=v.uid;o.brokerName=v.name;o.commission=Math.round(total*v.pct/100);}
+    for(const [vid,g] of Object.entries(groups)){const {v,parent}=shops[vid],boss=parent||v,goods=g.reduce((s,x)=>s+x.p.price*x.q,0),dl=deliveryFor(boss,f,Object.assign({},d,{mode:(d.modes&&d.modes[vid])||d.mode}),loc,goods),total=goods+dl.fee,id='ORD-'+Math.floor(10000+Math.random()*90000),otp=String(Math.floor(1000+Math.random()*9000));
+      const o={id,customerId:m.id,customerUid:uid,customerName:m.name,vendorId:boss.id,vendorUid:boss.uid,vendor:boss.shopName,date:new Date().toLocaleDateString('en-GB'),ts:Date.now(),items:g.map(x=>x.p.name+(x.q>1?' x'+x.q:'')).join(', '),productImg:g[0].p.image||'',total,goods,deliveryFee:dl.fee,deliveryMode:dl.mode,distanceKm:dl.km,deliveryEst:dl.est,destRegion:dl.region,stand:dl.stand,feeBy:'auto',negotiate:!!d.negotiate,status:'Inasubiri Malipo',stage:1,payStatus:'PENDING',fulfillment:f,isConfirmedByOtp:false,loc,note:note0,isOffer:g.some(x=>x.offer)};
+      if(parent){o.brokerId=v.id;o.brokerUid=v.uid;o.brokerName=v.name;o.commission=Math.round(goods*v.pct/100);}
       t.set(db.doc('orders/'+id),o);t.set(db.doc('orderSecrets/'+id),{customerUid:uid,otp});
       g.forEach(x=>t.update(x.ref,{stock:inc(-x.q)}));
       note(t,m,'Oda Mpya Imethibitishwa',`Oda ${id} kutoka ${boss.shopName}. OTP yako: [ ${otp} ]. Mpe muuzaji mzigo ukifika.`);
+      if(d.negotiate&&f==='Delivery')note(t,boss,'Mteja Anaomba Kujadili Nauli',`${m.name} ameagiza oda ${id} na anataka kujadili nauli (sasa TZS ${dl.fee.toLocaleString()}). Fungua Oda, badilisha nauli kisha mjulishe; atalipa baada ya hapo.`);
       if(parent)note(t,v,'Oda kupitia Duka Lako',`Oda ${id}: commission TZS ${o.commission.toLocaleString()} baada ya mzigo kufika.`);ids.push(id);}
     return {orders:ids};});});
+
+/* Muuzaji (mwenye duka) anabadilisha nauli ya oda ambayo bado haijalipwa (mf. baada ya kujadiliana na mteja). Jumla ya oda inabadilika. */
+exports.setDeliveryFee=onCall(async req=>{const uid=uidOf(req),dd=req.data||{},fee=Math.round(+dd.fee);
+  if(!(fee>=0&&fee<=500000))throw err('invalid-argument','Nauli iwe kati ya TZS 0 na 500,000');
+  const ref=db.doc('orders/'+String(dd.orderId||''));
+  return db.runTransaction(async t=>{const o=(await t.get(ref)).data();
+    if(!o||o.vendorUid!==uid)throw err('permission-denied','Si oda ya duka lako');
+    if(o.payStatus!=='PENDING')throw err('failed-precondition','Oda imeshalipiwa - nauli haiwezi kubadilishwa tena');
+    if(o.fulfillment!=='Delivery')throw err('failed-precondition','Oda hii ni ya kufuata dukani (Pickup)');
+    const goods=typeof o.goods==='number'?o.goods:o.total-(o.deliveryFee||0),total=goods+fee,c=await byId(t,o.customerId);
+    t.update(ref,{deliveryFee:fee,total,goods,feeBy:'vendor',feeAt:Date.now(),negotiate:false});
+    note(t,c.data(),'Nauli Imebadilishwa',`${o.vendor} amebadilisha nauli ya oda ${o.id} kuwa TZS ${fee.toLocaleString()}. Jumla mpya: TZS ${total.toLocaleString()}. Fungua Oda Zangu ulipe.`);
+    return {ok:true,total};});});
 
 exports.shipOrder=onCall(async req=>{const uid=uidOf(req),ref=db.doc('orders/'+req.data.orderId);
   return db.runTransaction(async t=>{const o=(await t.get(ref)).data();if(!o||o.vendorUid!==uid||o.stage!==2)throw err('failed-precondition','Oda haiwezi kutumwa');
@@ -48,7 +71,7 @@ exports.confirmDelivery=onCall(async req=>{const uid=uidOf(req),{orderId,otp}=re
     if(!sec||String(otp).trim()!==sec.otp)throw err('permission-denied','OTP si sahihi');
     const v=(await t.get(db.doc('accounts/'+uid))).data(),b=o.brokerId?await byId(t,o.brokerId):null,c=(await byId(t,o.customerId)).data(),ad=await t.get(db.collection('accounts').where('role','==','admin').limit(1));
     /* MAKATO: 5% ya CTM kila mauzo (kawaida). Duka lenye MKOPO (registrationDebt>0) linakatwa pia 5% ya mkopo => jumla 10% hadi deni liishe. Mwenye duka anapata kiasi kamili baada ya makato yote. */
-    const debt0=Math.max(0,v.registrationDebt||0),fee=Math.round(o.total*FEE),loanCut=Math.min(Math.round(o.total*FEE),debt0),debtLeft=debt0-loanCut,cleared=loanCut>0&&debtLeft<=0;
+    const debt0=Math.max(0,v.registrationDebt||0),base=(typeof o.goods==='number'?o.goods:o.total),fee=Math.round(base*FEE),loanCut=Math.min(Math.round(base*FEE),debt0),debtLeft=debt0-loanCut,cleared=loanCut>0&&debtLeft<=0;
     const com=Math.min(o.commission||0,o.total-fee-loanCut),net=o.total-fee-loanCut-com;
     t.update(ref,{stage:4,status:'Imekamilika (Delivered)',isConfirmedByOtp:true,credited:true,fee,loanCut,netToShop:net});
     if(loanCut>0)t.update(db.doc('accounts/'+uid),{registrationDebt:debtLeft,totalPaidTowardDebt:inc(loanCut),paymentStatus:cleared?'paid':'loan'});

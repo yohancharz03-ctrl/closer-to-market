@@ -42,6 +42,7 @@ setTimeout(()=>{if(!window.__cloudReady)show('Firebase haijapakia. Angalia intan
     </style>
     <!-- Load runtime configuration before either Firebase module initializes. -->
     <script src="/.netlify/functions/firebase-config"></script>
+    <script src="firebase-config.static.js"></script>
     <!-- Firebase SDK & Firestore Database Integration -->
     <script type="module">
       import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -79,7 +80,8 @@ if (window.CTM_FIREBASE_CONFIG) {
         const notice = document.createElement('div');
         notice.setAttribute('role', 'status');
         notice.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:200;background:#78350f;color:white;padding:12px;text-align:center;font:14px sans-serif';
-        notice.textContent = 'Preview: Firebase is not configured. Sample content only; sign-in and cloud features are unavailable.';
+        notice.innerHTML = '<b>Akaunti na huduma za mtandaoni hazijawashwa.</b> Firebase haijawekwa kwenye tovuti hii, kwa hiyo unaona maudhui ya mfano tu. Mmiliki: weka FIREBASE_* kwenye Netlify (Environment variables) au jaza faili firebase-config.static.js, kisha weka hewani upya. <button type="button" aria-label="Funga" style="margin-left:8px;font-weight:900;font-size:16px" onclick="this.parentNode.remove()">&times;</button>';
+        notice.style.fontSize = '12px';
         document.body.appendChild(notice);
       }
     </script>
@@ -468,9 +470,10 @@ if (window.CTM_FIREBASE_CONFIG) {
             while((m=re.exec(t))){let u=m[0],tail='';const prev=t[m.index-1];if(prev&&/[@\w.\/:-]/.test(prev)&&!/^https?:/i.test(u))continue;
                 for(;;){const c=u.slice(-1);if(c&&'.,;:!?\'"»]}'.includes(c)||(c===')'&&u.split(')').length>u.split('(').length)){tail=c+tail;u=u.slice(0,-1);}else break;}if(!u)continue;
                 const href=/^https?:\/\//i.test(u)?u:'https://'+u;if(!/^https?:\/\/[^\s]+\.[^\s]+/i.test(href))continue;
-                out+=e(t.slice(last,m.index))+'<a href="'+e(href)+'" target="_blank" rel="noopener noreferrer nofollow" onclick="return ctmLinkClick(event,this)" style="color:#38bdf8;text-decoration:underline;word-break:break-all">'+e(u)+'</a>'+e(tail);last=m.index+m[0].length;}
+                const li=window.ctmLinkInfo?ctmLinkInfo(href):null;
+                out+=e(t.slice(last,m.index))+'<a href="'+e(href)+'" target="_blank" rel="noopener noreferrer nofollow" onclick="return ctmLinkClick(event,this)" '+(li?'title="'+e(href)+'" style="display:inline-block;color:#e0f2fe;background:#0369a1;border:1px solid #38bdf8;border-radius:999px;padding:2px 10px;margin:2px 0;font-weight:700;text-decoration:none;word-break:normal;max-width:100%">'+e(li.label):'style="color:#38bdf8;text-decoration:underline;word-break:break-all">'+e(u))+'</a>'+e(tail);last=m.index+m[0].length;}
             return out+e(t.slice(last));}
-        function ctmLinkClick(ev,a){try{ev.stopPropagation();const u=new URL(a.href);if(u.origin===location.origin){const rid=+u.searchParams.get('reel');if(rid){ev.preventDefault();if(!(window.ctmOpenReel&&ctmOpenReel(rid)))alert('Reel hii haipatikani (huenda imefutwa).');return false;}}}catch(e){}return true;}
+        function ctmLinkClick(ev,a){try{ev.stopPropagation();const p=window.ctmParseLink?ctmParseLink(a.href):null;if(p){ev.preventDefault();ctmOpenLink(p.kind,p.id);return false;}}catch(e){}return true;}
         function ctmSafe(s){return String(s==null?'':s).replace(/</g,'&lt;').replace(/>/g,'&gt;');}
         function ctmCatBadge(n){const k=CTM_CATS[ctmCat(n.category,n.title)];return `<span style="background:${k.c}22;color:${k.c};border:1px solid ${k.c}55;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:800;margin-right:4px">${k.i} ${k.l}</span>`;}
         function ctmOpenNotif(d){try{const me=window.__ctm&&window.__ctm.me,k=d&&d.kind;
@@ -970,7 +973,7 @@ if (window.CTM_FIREBASE_CONFIG) {
                     <div class="flex items-center justify-between px-1">
                         <h3 class="font-extrabold text-sm text-emerald-400">
                             ${showMikoaniOnly ? '🌍 Mikoani' : '🔥 Soko la Karibu'}
-                        </h3>
+                        </h3><button onclick="window.__scanQrOnly=true;openScannerModal()" class="text-[11px] font-bold text-sky-300 bg-slate-900 border border-slate-800 rounded-full px-3 py-1" title="Scan QR ya duka">📷 Scan QR ya Duka</button>
                     </div>
                     <div class="space-y-6">
                         ${filteredVendors.length?'':(window.ctmWhyEmpty?ctmWhyEmpty():'')}${filteredVendors.map((vendor, index) => `
@@ -1026,6 +1029,7 @@ if (window.CTM_FIREBASE_CONFIG) {
                                         <button onclick="toggleStoreMap(${vendor.id})" class="w-full bg-slate-950 hover:bg-slate-800 text-slate-300 text-xs font-semibold py-2 px-3 rounded-xl border border-slate-800 flex items-center justify-center gap-1.5">
                                             <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i> Angalia Ramani Halisi
                                         </button>
+                                        <button onclick="ctmShareItem('shop',${vendor.id})" class="w-full mt-2 bg-slate-950 hover:bg-slate-800 text-sky-300 text-xs font-semibold py-2 px-3 rounded-xl border border-slate-800">🔗 Shiriki Duka (link / QR)</button>
                                         ${activeMapVendorId === vendor.id ? `
                                             <div class="mt-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
                                                 <div id="map-${vendor.id}" class="dynamic-map"></div>
@@ -1202,7 +1206,7 @@ if (window.CTM_FIREBASE_CONFIG) {
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <div class="flex items-center gap-2">
                             <button onclick="ctmBack(()=>{switchTab('reels')})" class="p-1.5 bg-slate-800 rounded-lg text-slate-300" title="Rudi Reels (Swipe Right)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-                            <h3 class="font-bold text-sm text-slate-100">Bidhaa za Duka: ${currentUser.shopName}</h3>
+                            <h3 class="font-bold text-sm text-slate-100">Bidhaa za Duka: ${(vendorsList.find(v=>v.id===(window.ctmStoreId||currentUser.id))||currentUser).shopName}</h3><button onclick="ctmShareItem('shop',${window.ctmStoreId||currentUser.id})" class="ml-2 px-2 py-1 bg-slate-800 rounded-lg text-sky-300 text-[11px] font-bold" title="Shiriki duka">🔗 Shiriki</button>
                         </div>
                         
                     </div>
@@ -1213,7 +1217,7 @@ if (window.CTM_FIREBASE_CONFIG) {
                     <div class="grid grid-cols-2 gap-3 pt-2">
                         ${filteredProducts.map(p => `
                             <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow p-2 flex flex-col justify-between relative">
-                                <button onclick="shareProduct('${p.name}')" class="absolute top-3 left-3 bg-black/60 p-1.5 rounded-full text-slate-200 z-10" title="Share">
+                                <button onclick="ctmShareItem('product',${p.id})" class="absolute top-3 left-3 bg-black/60 p-1.5 rounded-full text-slate-200 z-10" title="Share">
                                     <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
                                 </button>
                                 ${currentUser.role === 'vendor' && p.vendorId === currentUser.id ? `
@@ -1308,7 +1312,7 @@ if (window.CTM_FIREBASE_CONFIG) {
                                         <option value="Delivery">Nataka kuletewa ulipo (Delivery)</option>
                                         <option value="Pickup">Nitafuata mwenyewe dukani (Pickup)</option>
                                     </select>
-                                </div><div><label class="block text-xs font-medium text-slate-300 mb-1">Maelezo / kiasi unachohitaji (hiari):</label><textarea id="cart-note" rows="2" onblur="ctmSaveNote(this.value)" placeholder="Mf. Nahitaji vipande 5, rangi nyeusi..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">${currentUser.cartNote||''}</textarea></div>
+                                </div><div id="ctm-fare-box"></div><div><label class="block text-xs font-medium text-slate-300 mb-1">Maelezo / kiasi unachohitaji (hiari):</label><textarea id="cart-note" rows="2" onblur="ctmSaveNote(this.value)" placeholder="Mf. Nahitaji vipande 5, rangi nyeusi..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">${currentUser.cartNote||''}</textarea></div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="block text-[11px] font-medium text-slate-300 mb-1">Mtandao:</label>
@@ -1405,7 +1409,7 @@ if (window.CTM_FIREBASE_CONFIG) {
                                     <img src="${ord.productImg}" class="w-14 h-14 rounded-xl object-cover border border-slate-700">
                                     <div>
                                         <p class="text-xs font-bold text-white">${ord.items}</p>
-                                        <p class="text-xs font-extrabold text-emerald-400">TZS ${ord.total.toLocaleString()}</p>
+                                        <p class="text-xs font-extrabold text-emerald-400">TZS ${ord.total.toLocaleString()}</p>${window.ctmFareLine?ctmFareLine(ord):''}
                                     </div>
                                 </div>
                                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-2">
@@ -1654,6 +1658,10 @@ if (window.CTM_FIREBASE_CONFIG) {
                                 <div class="p-2 bg-purple-500/10 text-purple-400 rounded-xl"><i data-lucide="qr-code" class="w-5 h-5"></i></div>
                                 <span class="text-xs font-bold text-slate-200">QR Code</span>
                             </button>
+                            ${currentUser.role==='vendor'?`<button onclick="ctmFareSettings()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 shadow transition">
+                                <div class="p-2 bg-orange-500/10 text-orange-400 rounded-xl text-lg leading-none">🚚</div>
+                                <span class="text-xs font-bold text-slate-200">Nauli</span>
+                            </button>`:''}
                             <button onclick="openSubShopsManager()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 shadow transition">
                                 <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl"><i data-lucide="users" class="w-5 h-5"></i></div>
                                 <span class="text-xs font-bold text-slate-200">Subshops</span>
@@ -1843,7 +1851,7 @@ if (window.CTM_FIREBASE_CONFIG) {
                         ${currentUser.role === 'vendor' ? `
                             <button onclick="openSubShopsManager()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>👥 Subshop Office & Madalali</span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                             <button onclick="openPaymentStatus()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>💳 Payment Status (Usajili wa Miezi 3)</span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-                            <button onclick="alert('Story views ndani ya masaa 24: 1,420 views');" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between text-slate-200"><span>👁 Story Views & Likes</span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            <button onclick="ctmStoryStats()" class="w-full bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-slate-200"><span class="flex flex-col text-left"><span>👁 Story Views & Likes</span><span class="text-[11px] font-normal">${window.ctmStoryStatText?ctmStoryStatText():''}</span></span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                         ` : ''}
                     </div>
                 </div>
@@ -2524,7 +2532,7 @@ window.renderVendorOrders=function(){
       <div class="flex-1 min-w-0"><div class="flex justify-between text-[10px] text-slate-500"><span>${o.id} ${o.isOffer?'<b class="bg-red-600 text-white px-1.5 rounded-full">🎁 Live Offer</b>':''}</span><span>${o.date}</span></div>
       <p class="text-xs font-bold text-white truncate">${esc(o.items)}</p>
       <p class="text-[11px] text-slate-400">Mteja: ${esc(o.customerName)} - ${o.fulfillment}</p>${o.note?`<p class="text-[11px] text-sky-300">📝 ${esc(o.note)}</p>`:''}${o.loc?`<a href="https://maps.google.com/?q=${o.loc.lat},${o.loc.lng}" target="_blank" class="text-emerald-400 text-[11px] underline">Ona eneo la mteja (ramani)</a>`:''}${o.brokerName?`<p class="text-[11px] text-amber-300">Kupitia dalali: ${esc(o.brokerName)} - commission TZS ${o.commission.toLocaleString()}</p>`:''}
-      <p class="text-xs text-emerald-400 font-extrabold">TZS ${o.total.toLocaleString()} <span class="text-slate-400 font-medium">- ${o.status}</span></p></div></div>
+      <p class="text-xs text-emerald-400 font-extrabold">TZS ${o.total.toLocaleString()} <span class="text-slate-400 font-medium">- ${o.status}</span></p>${window.ctmFareRow?ctmFareRow(o):''}</div></div>
       <div class="flex gap-2">${act(o)}<button onclick="ctmChatWith(${o.customerId})" class="bg-slate-800 text-slate-200 px-3 rounded-xl text-xs font-bold">Ujumbe</button></div></div>`).join(''):'<p class="text-xs text-slate-400 text-center py-10">Bado hujapokea oda.</p>'}</div>`;
 };
 window.renderAdminAccount=function(){
@@ -2793,7 +2801,7 @@ window.ctmOpenReel=id=>{const S=C.S,r=S&&S.reels.find(x=>x.id===id);if(!r)return
 /* ---------- Scanner halisi (kamera + BarcodeDetector) ---------- */
 let stream=null;
 function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
-const _close=window.closeScannerModal;window.closeScannerModal=function(){stopCam();_close();};
+const _close=window.closeScannerModal;window.closeScannerModal=function(){window.__scanQrOnly=false;stopCam();_close();};
 const zx=v=>{const go=()=>{try{const R=new ZXing.BrowserMultiFormatReader();window.__zr=R;R.decodeFromVideoElement(v).then(r=>found(r.getText())).catch(()=>{});}catch(e){alert('Scanner haijafanya kazi. Weka msimbo kwa mkono.');}};
   if(window.ZXing)return go();const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';s.onload=go;s.onerror=()=>alert('Imeshindwa kupakia scanner (mtandao).');document.head.appendChild(s);};
 window.openScannerModal=async function(){
@@ -2805,7 +2813,7 @@ window.openScannerModal=async function(){
   const v=$('scan-video');v.srcObject=stream;if(!window.BarcodeDetector)return zx(v);const det=new BarcodeDetector();
   const tick=async()=>{if(!stream)return;try{const r=await det.detect(v);if(r.length)return found(r[0].rawValue);}catch(e){}setTimeout(tick,300);};tick();
 };
-function found(code){try{if(window.__zr)window.__zr.reset();}catch(e){}stopCam();const v=$('scan-video');if(v)v.remove();_close();openAddProduct();
+function found(code){try{if(window.__zr)window.__zr.reset();}catch(e){}stopCam();const v=$('scan-video');if(v)v.remove();_close();if(window.ctmScanRoute&&ctmScanRoute(code)){window.__scanQrOnly=false;return;}if(window.__scanQrOnly){window.__scanQrOnly=false;return alert('QR hii si ya duka la Closer Market.');}openAddProduct();
   setTimeout(()=>{const old=C.S.products.find(p=>p.barcode===code&&p.vendorId===C.me.id)||C.S.products.find(p=>p.barcode===code);if($('prod-name')){$('prod-name').value=old?old.name:'Bidhaa '+code;if(old){$('prod-price').value=old.price;if(old.vendorId===C.me.id)$('prod-stock').value=old.stock;}toast('Msimbo '+code+(old?' umetambuliwa':' umesomwa - jaza jina na bei'));window.ctmLastBarcode=code;}},100);}
 const _sp=window.handleSaveProductToFirebase;
 window.handleSaveProductToFirebase=async function(e){await _sp(e);const p=productsList[0];if(window.ctmLastBarcode&&p&&!p.barcode){p.barcode=window.ctmLastBarcode;C.persist();}window.ctmLastBarcode=null;};
@@ -2972,23 +2980,63 @@ function shell(l){let o=$('live-ov');if(o)o.remove();o=document.createElement('d
   <div class="flex gap-2 overflow-x-auto no-scrollbar">${((C.S.offers||[]).filter(o=>o.vendorId===l.hostId&&o.endsAt>Date.now()&&o.audience==='all')).map(o=>`<button onclick="ctmOpenOffer(${o.id})" class="${G} shrink-0 text-amber-200 text-[11px] px-3 py-1.5 rounded-full">🎁 ${esc(o.name)} - ${o.price.toLocaleString()}</button>`).join('')}</div>
   <div id="lv-msgs" class="max-h-40 overflow-y-auto no-scrollbar space-y-1 text-white text-xs"></div>
   ${l.chat?`<div class="flex gap-2"><input id="lv-in" onkeydown="if(event.key==='Enter')ctmLiveSend()" placeholder="Andika maoni..." class="${G} flex-1 rounded-full px-4 py-2 text-xs text-white placeholder-white/60 focus:outline-none"><button onclick="ctmLiveSend()" class="${G} text-white text-xs font-bold px-4 rounded-full">Tuma</button></div>`:'<p class="text-white/60 text-[11px] text-center">Maoni yamezimwa</p>'}</div>`;
-  document.body.appendChild(o);o.addEventListener('click',()=>{if(lk)lk.startAudio().catch(()=>{});});if(h)$('lv-vid').srcObject=cam;}
+  document.body.appendChild(o);o.addEventListener('click',()=>{if(lk)lk.startAudio().catch(()=>{});o.querySelectorAll('video').forEach(v=>{if(v.id!=='lv-vid'&&v.id!=='lvgv-self'&&v.srcObject){v.muted=false;v.play().catch(()=>{});}});});if(h)$('lv-vid').srcObject=cam;}
 function update(){if(!room)return;const l=cur();if(!l||(!room.host&&!on(l))){alert('Live imeisha.');return close();}
   const n=$('lv-count');if(n)n.textContent=viewers(l.id)+' 👁';
-  const m=$('lv-msgs');if(m){const a=L().liveMsgs.filter(x=>x.liveId===l.id&&x.kind==='msg').sort((x,y)=>x.ts-y.ts).slice(-40);m.innerHTML=a.map(x=>`<p class="drop-shadow"><b class="text-cyan-200">${esc(x.name)}</b> ${esc(x.text)}</p>`).join('');m.scrollTop=m.scrollHeight;}}
+  const m=$('lv-msgs');if(m){const a=L().liveMsgs.filter(x=>x.liveId===l.id&&x.kind==='msg').sort((x,y)=>x.ts-y.ts).slice(-40);m.innerHTML=a.map(x=>`<p class="drop-shadow"><b class="text-cyan-200">${esc(x.name)}</b> ${window.ctmLinkify?ctmLinkify(x.text):esc(x.text)}</p>`).join('');m.scrollTop=m.scrollHeight;}}
 window.ctmLiveSend=t=>{const l=cur();if(!l)return;const i=$('lv-in'),x=t||(i&&i.value.trim());if(!x)return;
   L().liveMsgs.push({id:C.nid(),liveId:l.id,from:C.me.id,name:C.me.role==='vendor'?C.me.shopName:C.me.name,text:x.slice(0,200),kind:'msg',ts:Date.now()});if(i)i.value='';C.persist();update();};
 window.ctmTools=()=>{const i=$('lv-icons'),a=$('lv-arrow');i.classList.toggle('hidden');a.textContent=i.classList.contains('hidden')?'‹':'›';};
-window.ctmFlip=async()=>{if(!cam)return;const s=cam.getVideoTracks()[0].getSettings().facingMode==='user'?'environment':'user';cam.getTracks().forEach(t=>t.stop());try{cam=await navigator.mediaDevices.getUserMedia({video:{facingMode:s},audio:true});$('lv-vid').srcObject=cam;lkRepub(cam);}catch(e){alert('Imeshindwa kubadili kamera.');}};
+window.ctmFlip=async()=>{if(!cam)return;const s=cam.getVideoTracks()[0].getSettings().facingMode==='user'?'environment':'user';cam.getTracks().forEach(t=>t.stop());try{cam=await navigator.mediaDevices.getUserMedia({video:{facingMode:s},audio:true});$('lv-vid').srcObject=cam;lkRepub(cam);rtcRepl(cam);}catch(e){alert('Imeshindwa kubadili kamera.');}};
 window.ctmLiveShop=id=>{close();openVendorProducts(id);};
-window.ctmLiveShare=()=>{const d={title:'Live ya duka',text:'Njoo uangalie live kwenye Closer Market',url:location.href};navigator.share?navigator.share(d).catch(()=>{}):(navigator.clipboard&&navigator.clipboard.writeText(d.url),alert('Kiungo kimenakiliwa'));};
+window.ctmLiveShare=()=>{if(room&&window.ctmShareItem)return ctmShareItem('live',room.id);const d={title:'Live ya duka',text:'Njoo uangalie live kwenye Closer Market',url:location.href};navigator.share?navigator.share(d).catch(()=>{}):(navigator.clipboard&&navigator.clipboard.writeText(d.url),alert('Kiungo kimenakiliwa'));};
 const FS=()=>window.__fs,ICE=()=>({iceServers:window.CTM_ICE||[{urls:'stun:stun.l.google.com:19302'}]});
 let pcs={},vpcs={},unsub=null,gstream=null;
-const sig=(to,kind,data,dir)=>{const f=FS(),id=C.nid();return f.setDoc(f.doc(f.db,'liveSig',String(id)),{id,liveId:room.id,from:C.me.id,to,kind,dir,data:JSON.stringify(data||{}),ts:Date.now()}).catch(e=>console.warn('sig',e.code));};
+const sig=(to,kind,data,dir)=>{if(!room||!FS())return Promise.resolve();const f=FS(),id=C.nid();return f.setDoc(f.doc(f.db,'liveSig',String(id)),{id,liveId:room.id,from:C.me.id,to,kind,dir,data:JSON.stringify(data||{}),ts:Date.now()}).catch(e=>console.warn('sig',e.code));};
 const addIce=(pc,d)=>{if(pc.remoteDescription)pc.addIceCandidate(d).catch(()=>{});else(pc._q=pc._q||[]).push(d);};
 const flush=pc=>{(pc._q||[]).forEach(d=>pc.addIceCandidate(d).catch(()=>{}));pc._q=[];};
 const myStream=()=>room&&room.host?cam:gstream;
-function listenSig(){if(room&&room.host)lkStartHost();}
+/* ===== WebRTC ya moja kwa moja (signaling kupitia Firestore 'liveSig'): inafanya kazi BILA LiveKit.
+   LiveKit ikipatikana (seva imewekwa) inatumika kwanza; ikishindwa/haijawekwa, WebRTC inachukua nafasi yenyewe, bila ujumbe wa kosa.
+   Kubadili: window.CTM_LIVE_ENGINE = 'auto' (chaguo-msingi) | 'livekit' (LiveKit tu) | 'webrtc' (WebRTC tu).
+   Mwenyeji (na aliyepandishwa) daima anajibu maombi ya WebRTC; mtazamaji anachagua njia kulingana na kinachofanya kazi. ===== */
+const ENGINE=()=>window.CTM_LIVE_ENGINE||'auto';
+let lkDead=false,sigQ=Promise.resolve(),sigSeen=new Set();const FB={},earlyIce={},pendOffers={};
+function lkFail(e){if(ENGINE()==='livekit'){alert('Live: '+((e&&e.message)||e));return;}lkDead=true;console.warn('LiveKit haipatikani, inatumika WebRTC:',(e&&e.message)||e);}
+function sigOn(){if(unsub||!room||!C.me)return;const f=FS();if(!f||!f.onSnapshot||!f.query||!f.where)return;
+  lkDead=false;sigSeen=new Set();[FB,earlyIce,pendOffers].forEach(o=>Object.keys(o).forEach(k=>delete o[k]));
+  try{unsub=f.onSnapshot(f.query(f.collection(f.db,'liveSig'),f.where('to','==',C.me.id)),snap=>{const add=[];
+    snap.docChanges().forEach(ch=>{if(ch.type!=='added')return;const d=ch.doc.data();f.deleteDoc(ch.doc.ref).catch(()=>{});if(!d||sigSeen.has(d.id))return;sigSeen.add(d.id);add.push(d);});
+    add.sort((a,b)=>((a.ts||0)-(b.ts||0))||(a.id-b.id)).forEach(d=>{sigQ=sigQ.then(()=>sigIn(d)).catch(e=>console.warn('sigIn',e));});
+  },e=>console.warn('liveSig',e.code));}catch(e){console.warn('liveSig',e);}}
+async function sigIn(d){if(!room||d.liveId!==room.id)return;let x={};try{x=JSON.parse(d.data||'{}');}catch(e){}const from=d.from;
+  if(d.kind==='offer'&&d.dir==='v')return pubAnswer(from,x);
+  if(d.kind==='answer'&&d.dir==='p'){const r=vpcs[from],pc=r&&r._pc;if(pc&&pc.signalingState==='have-local-offer'){await pc.setRemoteDescription(x);flush(pc);}return;}
+  if(d.kind==='ice'){const pc=d.dir==='v'?pcs[from]:(vpcs[from]&&vpcs[from]._pc);if(pc)addIce(pc,x);else(earlyIce[d.dir+from]=earlyIce[d.dir+from]||[]).push(x);}}
+/* Upande wa mwenye video/sauti (host au aliyepandishwa): anajibu ombi la mtazamaji kwa kumtumia mkondo wake */
+async function pubAnswer(from,offer){const st=myStream();if(!st||!st.getTracks().length){pendOffers[from]=offer;return;}
+  if(!pcs[from]&&Object.keys(pcs).length>=10)return;
+  if(pcs[from]){try{pcs[from].close();}catch(e){}delete pcs[from];}
+  const pc=new RTCPeerConnection(ICE());pcs[from]=pc;
+  pc.onicecandidate=e=>{if(e.candidate)sig(from,'ice',e.candidate.toJSON(),'p');};
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed'||pc.connectionState==='closed'){try{pc.close();}catch(e){}if(pcs[from]===pc)delete pcs[from];}};
+  st.getTracks().forEach(t=>{try{pc.addTrack(t,st);}catch(e){}});
+  await pc.setRemoteDescription(offer);(earlyIce['v'+from]||[]).forEach(c=>pc.addIceCandidate(c).catch(()=>{}));earlyIce['v'+from]=[];
+  const an=await pc.createAnswer();await pc.setLocalDescription(an);
+  await sig(from,'answer',{type:an.type,sdp:an.sdp},'p');cap(pc,Object.keys(pcs).length>3?350:700);}
+function rtcFlushPending(){Object.keys(pendOffers).forEach(k=>{const o=pendOffers[k];delete pendOffers[k];pubAnswer(+k,o).catch(e=>console.warn('rtc',e));});}
+function rtcRepl(st){if(!st)return;Object.values(pcs).forEach(pc=>{try{pc.getSenders().forEach(s=>{if(!s.track)return;const t=st.getTracks().find(x=>x.kind===s.track.kind);if(t)s.replaceTrack(t).catch(()=>{});});}catch(e){}});}
+/* Upande wa mtazamaji: anaomba mkondo wa pid (host au aliyepandishwa) */
+function rtcWatch(pid,rec){if(!window.RTCPeerConnection)return;
+  const pc=new RTCPeerConnection(ICE());rec._pc=pc;const ms=new MediaStream();
+  pc.addTransceiver('video',{direction:'recvonly'});pc.addTransceiver('audio',{direction:'recvonly'});
+  pc.ontrack=e=>{const st=(e.streams&&e.streams[0])||ms;if(!(e.streams&&e.streams[0]))ms.addTrack(e.track);rtcAttach(pid,st,rec);e.track.onunmute=()=>rtcAttach(pid,st,rec);};
+  pc.onicecandidate=e=>{if(e.candidate)sig(+pid,'ice',e.candidate.toJSON(),'v');};
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed'&&vpcs[pid]===rec){rec._got=false;rec._t=1;}};
+  pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>sig(+pid,'offer',{type:pc.localDescription.type,sdp:pc.localDescription.sdp},'v')).catch(e=>console.warn('rtc offer',e));}
+function rtcAttach(pid,st,rec){const el=$(lkMap[pid]);if(!el)return;if(el.srcObject!==st)el.srcObject=st;el.muted=false;const p=el.play&&el.play();if(p&&p.catch)p.catch(()=>{el.muted=true;el.play().catch(()=>{});});
+  rec._got=true;const l=cur();if(l&&String(l.hostId)===String(pid)){const ph=$('lv-ph');if(ph)ph.remove();}}
+function listenSig(){sigOn();if(room&&room.host)lkStartHost();}
 function cap(pc,k){try{pc.getSenders().forEach(s=>{if(!s.track)return;const p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];p.encodings[0].maxBitrate=(s.track.kind==='video'?k:40)*1000;s.setParameters(p).catch(()=>{});});}catch(e){}}
 function retryHost(l){if(room.host)return;const pc=vpcs[l.hostId];if(!pc){watch(l.hostId,'lv-rv');return;}if(!pc._got&&Date.now()-pc._t>10000){try{pc.close();}catch(e){}delete vpcs[l.hostId];const ph=$('lv-ph');if(ph&&ph.lastElementChild)ph.lastElementChild.textContent='Muunganisho unachelewa (mtandao mgumu). Bado tunajaribu...';}}
 let lk=null,lkP=null,lkMap={},lkPubs=[],lkPubMode=false;const lkAud={};
@@ -3005,16 +3053,21 @@ function lkConnect(pub){if(lk&&(!pub||lkPubMode))return Promise.resolve(lk);if(l
     r.on(LK.RoomEvent.TrackSubscribed,lkSync).on(LK.RoomEvent.ParticipantConnected,lkSync).on(LK.RoomEvent.TrackPublished,lkSync).on(LK.RoomEvent.Disconnected,()=>{if(lk===r)lk=null;});
     await r.connect(t.url,t.token);lk=r;lkPubMode=!!pub;try{await r.startAudio();}catch(e){}lkSync();return r;}finally{lkP=null;}})();return lkP;}
 function lkSync(){if(!lk||!room)return;const l=cur();lk.remoteParticipants.forEach(p=>{const pid=String(p.metadata||''),host=!!l&&String(l.hostId)===pid,el=$(host?'lv-rv':(lkMap[pid]||'lvgv-'+pid));
-  p.trackPublications.forEach(pub=>{const t=pub.track;if(!t||!pub.isSubscribed)return;
+  p.trackPublications.forEach(pub=>{const t=pub.track;if(!t||!pub.isSubscribed)return;{const rc=vpcs[pid];if(rc)rc._got=true;}
     if(pub.kind==='video'){if(el){t.attach(el);if(el.play)el.play().catch(()=>{});if(host){const ph=$('lv-ph');if(ph)ph.remove();}}}
     else if(pub.kind==='audio')t.attach(el&&el.tagName==='VIDEO'?el:lkAudio(pid));});});}
 async function lkPublish(st){if(!lk||!st)return;for(const t of st.getTracks()){try{await lk.localParticipant.publishTrack(t,{name:t.kind});lkPubs.push(t);}catch(e){console.warn('pub',e);}}}
 function lkUnpub(){if(lk)lkPubs.forEach(t=>{try{lk.localParticipant.unpublishTrack(t,false);}catch(e){}});lkPubs=[];}
 function lkRepub(st){lkUnpub();lkPublish(st);}
 function lkClose(){lkUnpub();if(lk){try{lk.disconnect();}catch(e){}lk=null;}Object.keys(lkAud).forEach(k=>{lkAud[k].remove();delete lkAud[k];});lkMap={};}
-async function lkStartHost(){try{await lkConnect(true);await lkPublish(cam);}catch(e){alert('Live: '+(e.message||e));}}
-async function lkGuestPub(st){try{if(lkP)await lkP.catch(()=>{});await lkConnect(true);await lkPublish(st);}catch(e){alert('Live: '+(e.message||e));}}
-function watch(pid,elId){pid=String(pid);lkMap[pid]=elId;if(!vpcs[pid])vpcs[pid]={_got:true,_t:Date.now(),close(){}};lkConnect(false).then(lkSync).catch(e=>{delete vpcs[pid];lkErr(e);});}
+async function lkStartHost(){if(ENGINE()==='webrtc')return;try{await lkConnect(true);await lkPublish(cam);}catch(e){lkFail(e);}}
+async function lkGuestPub(st){rtcFlushPending();if(ENGINE()==='webrtc')return;try{if(lkP)await lkP.catch(()=>{});await lkConnect(true);await lkPublish(st);}catch(e){lkFail(e);}}
+function watch(pid,elId){pid=String(pid);lkMap[pid]=elId;if(vpcs[pid])return;
+  const rec={_t:Date.now(),_got:false,_mode:'',_pc:null,close(){if(!rec._got)FB[pid]=(FB[pid]||0)+1;if(rec._pc){try{rec._pc.close();}catch(e){}rec._pc=null;}}};vpcs[pid]=rec;
+  const eng=ENGINE();
+  if(eng==='webrtc'||(eng==='auto'&&(lkDead||FB[pid]>0))){rec._mode='rtc';rtcWatch(pid,rec);return;}
+  rec._mode='lk';
+  lkConnect(false).then(lkSync).catch(e=>{if(eng==='livekit'){delete vpcs[pid];lkErr(e);return;}lkFail(e);if(vpcs[pid]===rec){rec.close();delete vpcs[pid];watch(pid,elId);}});}
 async function startViewer(){const l=cur();if(l)watch(l.hostId,'lv-rv');}
 async function startGuest(mode){try{gstream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1},video:mode==='video'?{width:{ideal:320},height:{ideal:240},frameRate:{ideal:15}}:false});await lkGuestPub(gstream);alert('Umepandishwa! Tumia earphones kuzuia mwangwi. Unaweza kuzima/kuwasha kamera na maikrofoni.');showCtl();}catch(e){room.denied=1;alert('Ruhusu maikrofoni/kamera ili kuongea.');}room.starting=0;}
 function stopGuest(){hideCtl();lkUnpub();if(gstream){gstream.getTracks().forEach(t=>t.stop());gstream=null;}Object.values(pcs).forEach(p=>{try{p.close();}catch(e){}});pcs={};}
@@ -3862,8 +3915,10 @@ const _a=window.addToCart;window.addToCart=function(id){const p=productsList.fin
 window.ctmRemoveCartItem=i=>{cartItems.splice(i,1);saveToOfflineCache();openCart();};
 window.processCheckoutPayment=async()=>{if(!C.me||!cartItems.length)return alert('Kikapu ni tupu.');
   const f=$('fulfillment_type')?$('fulfillment_type').value:'Delivery',q={};cartItems.forEach(i=>q[i.id]=(q[i.id]||0)+1);
-  const loc=await new Promise(r=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>r({lat:p.coords.latitude,lng:p.coords.longitude}),()=>r(null),{timeout:5000}):r(null));
-  const pr=run(call('placeOrder',{items:Object.entries(q).map(([id,qty])=>{const ci=cartItems.find(x=>String(x.id)===id);return ci&&ci.isOffer?{offerId:id}:{id,qty};}),fulfillment:f,loc,note:(C.me.cartNote||'')}));ctmPay('order',pr,()=>setTimeout(openOrderHistory,300));pr.then(r=>{if(r){cartItems=[];saveToOfflineCache();}});};
+  const ch=window.ctmFareChoice?ctmFareChoice():null;
+  if(ch&&f==='Delivery'&&!ch.loc&&!confirm('Eneo lako (GPS) halijawekwa, kwa hiyo nauli ni makadirio ya mkoa na muuzaji hataona ulipo. Bonyeza Sawa kuendelea, au Ghairi kisha ubonyeze "Tumia eneo langu" kwenye kikapu.'))return;
+  const loc=ch?ch.loc:await new Promise(r=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>r({lat:p.coords.latitude,lng:p.coords.longitude}),()=>r(null),{timeout:5000}):r(null));
+  const pr=run(call('placeOrder',{items:Object.entries(q).map(([id,qty])=>{const ci=cartItems.find(x=>String(x.id)===id);return ci&&ci.isOffer?{offerId:id}:{id,qty};}),fulfillment:f,loc,mode:ch&&ch.mode,modes:ch&&ch.modes,region:ch&&ch.region,negotiate:!!(ch&&ch.negotiate)&&f==='Delivery',note:(C.me.cartNote||'')}));if(ch&&ch.negotiate&&f==='Delivery'){pr.then(r=>{if(r){cartItems=[];saveToOfflineCache();alert('Oda imetumwa. Muuzaji atakujulisha nauli ya mwisho (angalia Ujumbe/Arifa), kisha ulipe kutoka Oda Zangu.');openOrderHistory();}});return;}ctmPay('order',pr,()=>setTimeout(openOrderHistory,300));pr.then(r=>{if(r){cartItems=[];saveToOfflineCache();}});};
 window.ctmShipOrder=id=>run(call('shipOrder',{orderId:id}),'Mzigo umetumwa');
 window.ctmConfirmDelivery=id=>run(call('confirmDelivery',{orderId:id,otp:$('vo-otp-'+id).value}),'Oda imekamilika, pesa zimeingia');
 window.verifyDeliveryOtp=()=>alert('Mpe muuzaji OTP yako mzigo ukifika; yeye ndiye anaithibitisha.');
@@ -4046,6 +4101,280 @@ setInterval(()=>{try{const m=C.me;if(USE_FN&&m&&['vendor','dalali'].includes(m.r
       const mm=(C.S&&C.S.msgs)||{};let mt=0;if(C.me)for(const c in mm)(mm[c]||[]).forEach(m=>{if(m.from===C.me.id&&(m.ts||0)>mt)mt=m.ts||0;});
       if(lastM===''){if(C.me)lastM=String(mt);}else if(String(mt)!==lastM){lastM=String(mt);if(mt){clearTimeout(t2);clearTimeout(t3);t2=setTimeout(ping,900);t3=setTimeout(ping,3500);}}
     }catch(e){}return r;};})();
+})();
+</script>
+<script src="fare.js"></script>
+<script>
+/* ===== CTM V37: viungo vya ndani (duka/bidhaa/reel/offer/live), QR ya duka, share, nauli ya usafirishaji kwa umbali ===== */
+(function(){
+const C=window.__ctm,$=id=>document.getElementById(id),F=window.CTMFare;
+const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>'TZS '+Math.round(+n||0).toLocaleString();
+const tst=m=>{const d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#0f172a;color:#fff;border:1px solid #334155;padding:8px 14px;border-radius:999px;font-size:12px;z-index:99999;max-width:90vw;text-align:center';document.body.appendChild(d);setTimeout(()=>d.remove(),2600);};
+const acc=id=>C.S&&(C.S.accounts||[]).find(a=>String(a.id)===String(id));
+
+/* ================= 1. VIUNGO VYA NDANI ================= */
+const KI={shop:'🏪',product:'🛍',reel:'🎬',offer:'🎁',live:'🔴'};
+const BASE=()=>location.origin+location.pathname;
+window.ctmLink=(k,id)=>BASE()+'?'+k+'='+encodeURIComponent(id);
+const parse=u=>{try{const x=new URL(u,location.href);if(x.host!==location.host)return null;for(const k in KI){const v=x.searchParams.get(k);if(v&&/^[\w-]+$/.test(v))return{kind:k,id:v};}}catch(e){}return null;};
+window.ctmParseLink=parse;
+const info=(k,id)=>{const S=C.S;if(!S)return null;
+  if(k==='shop'){const a=acc(id);return a&&(a.role==='vendor'||a.role==='dalali')?{label:'Duka: '+(a.shopName||a.name),noun:'Duka',title:a.shopName||a.name,img:a.imgUrl||a.coverUrl||''}:null;}
+  if(k==='product'){const p=(S.products||[]).find(x=>String(x.id)===String(id));return p?{label:p.name+' - '+fmt(p.price),noun:'Bidhaa',title:p.name,img:p.image||'',vendorId:p.vendorId,price:p.price}:null;}
+  if(k==='reel'){const r=(S.reels||[]).find(x=>String(x.id)===String(id));return r?{label:'Reel: '+(r.title||'video'),noun:'Reel',title:r.title||'Reel',img:r.thumbnail||'',video:r.videoUrl}:null;}
+  if(k==='offer'){const o=(S.offers||[]).find(x=>String(x.id)===String(id));return o?{label:'Offer: '+o.name+' - '+fmt(o.price),noun:'Offer',title:o.name,img:o.image||''}:null;}
+  if(k==='live'){const l=(S.lives||[]).find(x=>String(x.id)===String(id));return l?{label:'Live: '+(l.title||l.hostName),noun:'Live',title:l.title||l.hostName,img:l.hostImg||''}:null;}
+  return null;};
+const GEN={shop:'Fungua duka',product:'Angalia bidhaa',reel:'Tazama reel',offer:'Fungua offer',live:'Ingia live'};
+/* Kwa ctmLinkify: kiungo cha ndani kinaonekana kama kitufe chenye jina la kitu husika */
+window.ctmLinkInfo=href=>{const p=parse(href);if(!p)return null;const i=info(p.kind,p.id);return{kind:p.kind,label:KI[p.kind]+' '+(i?i.label:GEN[p.kind])};};
+
+const closeAll=()=>{try{window.ctmCloseStory&&ctmCloseStory();}catch(e){}try{window.ctmClosePeople&&ctmClosePeople();}catch(e){}try{const l=$('live-list');if(l)l.remove();}catch(e){}try{const d=$('dlg-ov');if(d)d.remove();}catch(e){}};
+const hi=pid=>{const b=document.querySelector(`button[onclick*="ctmShareItem('product',${pid})"]`),c=b&&b.closest('div.relative');if(c){c.scrollIntoView({block:'center',behavior:'smooth'});c.style.outline='2px solid #10b981';setTimeout(()=>{c.style.outline='';},4000);}};
+const live_on=l=>l&&l.status==='live'&&Date.now()-l.beat<45000;
+/* Fungua kitu husika kutoka kiungo (kinatumika na chat, story, reel, live chat, QR na kiungo kipya cha browser) */
+window.ctmOpenLink=(k,id)=>{
+  if(!C.S)return false;
+  const lo=$('live-ov');
+  if(lo&&k!=='live'){if(window.ctmLiveHost&&ctmLiveHost()){tst('Maliza live kwanza ndipo ufungue kiungo hiki.');return true;}try{ctmLeaveLive();}catch(e){}}
+  closeAll();
+  const i=info(k,id);
+  if(!i){alert(({shop:'Duka hili halipatikani.',product:'Bidhaa hii haipatikani (huenda imefutwa).',reel:'Reel hii haipatikani (huenda imefutwa).',offer:'Offer hii imeisha muda au haipo.',live:'Live hii haipatikani.'})[k]||'Kiungo hakipatikani.');return true;}
+  if(k==='shop'){openVendorProducts(+id);return true;}
+  if(k==='product'){openVendorProducts(i.vendorId);setTimeout(()=>hi(+id),600);return true;}
+  if(k==='reel'){if(!(window.ctmOpenReel&&ctmOpenReel(+id)))alert('Reel hii haipatikani.');return true;}
+  if(k==='offer'){window.ctmOpenOffer&&ctmOpenOffer(+id);return true;}
+  if(k==='live'){
+    if(!C.me){try{sessionStorage.setItem('ctm_pending_link','live:'+id);}catch(e){}openSignInPage();return true;}
+    const l=(C.S.lives||[]).find(x=>String(x.id)===String(id));if(!live_on(l)){alert('Live hii imeisha au bado haijaanza.');return true;}
+    window.ctmEnterLive(+id);return true;}
+  return false;};
+/* Kiungo kipya kinapofunguliwa kwenye browser (?shop= ?product= ?live=). ?reel= na ?offer= vinashughulikiwa na msimbo uliopo. */
+(function(){
+  const q=new URLSearchParams(location.search);let want=null;
+  for(const k of ['shop','product','live']){const v=q.get(k);if(v&&/^[\w-]+$/.test(v)){want={k,id:v};break;}}
+  if(!want){try{const p=sessionStorage.getItem('ctm_pending_link');if(p){const a=p.split(':');want={k:a[0],id:a[1],pend:1};}}catch(e){}}
+  if(!want)return;
+  if(!want.pend)try{history.replaceState(history.state,'',location.pathname);}catch(e){}
+  let n=0;const iv=setInterval(()=>{n++;const S=C.S;if(!S||!(S.accounts||[]).length){if(n>200)clearInterval(iv);return;}
+    const need=want.k==='live'||want.k==='offer';
+    if(need&&!C.me){if(!want.pend){try{sessionStorage.setItem('ctm_pending_link',want.k+':'+want.id);}catch(e){}want.pend=1;}if(n>400)clearInterval(iv);return;}
+    if(info(want.k,want.id)||n>25){clearInterval(iv);try{sessionStorage.removeItem('ctm_pending_link');}catch(e){}ctmOpenLink(want.k,want.id);}
+  },1500);
+})();
+
+/* ================= 2. SHARE (duka, bidhaa, reel, live) ================= */
+const txtFor=(k,id)=>{const i=info(k,id)||{};const t=k==='shop'?'Karibu dukani kwetu':k==='product'?'Angalia bidhaa hii':k==='live'?'Njoo uangalie live':k==='offer'?'Offer maalum':'Angalia reel hii';return(t+': '+(i.title||'Closer Market')+'\n'+ctmLink(k,id));};
+window.ctmShareItem=(k,id)=>{const i=info(k,id);if(!i)return tst('Hakipatikani');window.__shItem={k,id};
+  const b=(c,f,l,sub)=>`<button onclick="${f}" class="w-full ${c} text-left font-bold text-xs px-4 py-3 rounded-xl">${l}${sub?`<span class="block text-[10px] font-normal opacity-70">${sub}</span>`:''}</button>`;
+  ctmOpenOverlay('Shiriki '+i.noun,`<div class="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl p-2">${i.img?`<img src="${E(i.img)}" class="w-14 h-14 rounded-lg object-cover bg-slate-800">`:`<div class="w-14 h-14 rounded-lg bg-slate-800 flex items-center justify-center text-2xl">${KI[k]}</div>`}<div class="min-w-0"><p class="text-white text-xs font-bold truncate">${E(i.title)}</p><p class="text-[10px] text-sky-300 truncate">${E(ctmLink(k,id))}</p></div></div>
+   ${b('bg-emerald-500 text-slate-950',`ctmShChat()`,'💬 Tuma kwa mtu (Ujumbe)','Atabonyeza kiungo na kufunguliwa '+i.noun.toLowerCase()+' hili moja kwa moja')}
+   ${b('bg-pink-500 text-white',`ctmShStatus()`,'📷 Weka kama Status','Kiungo kinaonekana kama kitufe kwenye status yako (masaa 24)')}
+   ${b('bg-sky-600 text-white',`ctmShOut()`,'📤 Shiriki WhatsApp / app nyingine')}
+   ${b('bg-slate-800 text-slate-200',`ctmShCopy()`,'🔗 Nakili kiungo')}
+   ${k==='reel'&&i.video?b('bg-violet-600 text-white',`ctmReelFile(${id})`,'🎞 Tuma video yenyewe (faili)','Mpokeaji anaweza kuiona video moja kwa moja bila kufungua app'):''}
+   ${k==='product'&&i.vendorId?b('bg-slate-800 text-emerald-300',`ctmShareItem('shop',${i.vendorId})`,'🏪 Shiriki duka la bidhaa hii badala yake'):''}`);};
+window.ctmShCopy=()=>{const s=window.__shItem;if(!s)return;const u=ctmLink(s.k,s.id);try{navigator.clipboard.writeText(u).then(()=>tst('Kiungo kimenakiliwa'),()=>prompt('Nakili kiungo:',u));}catch(e){prompt('Nakili kiungo:',u);}};
+window.ctmShOut=()=>{const s=window.__shItem;if(!s)return;const i=info(s.k,s.id)||{},u=ctmLink(s.k,s.id);
+  if(navigator.share)navigator.share({title:i.title||'Closer Market',text:txtFor(s.k,s.id).split('\n')[0],url:u}).catch(()=>{});else window.open('https://wa.me/?text='+encodeURIComponent(txtFor(s.k,s.id)),'_blank','noopener');};
+window.ctmShStatus=()=>{const s=window.__shItem,me=C.me;if(!s)return;if(!me)return openSignInPage();const i=info(s.k,s.id)||{};
+  const st={id:Date.now(),name:me.shopName||me.name,img:me.imgUrl,text:txtFor(s.k,s.id).replace('\n',' ').slice(0,300),seen:false,isLive:false};
+  if(i.img){st.type='image';st.mediaUrl=i.img;}else{st.type='text';st.font='Arial';st.color='#ffffff';st.bg='#0f766e';}
+  if(s.k==='reel'&&i.video){st.type='video';st.mediaUrl=i.video;const r=(C.S.reels||[]).find(x=>String(x.id)===String(s.id))||{};st.trimStart=r.trimStart;st.trimEnd=r.trimEnd;st.muted=false;}
+  storiesList.unshift(st);saveToOfflineCache();ctmClosePeople();tst('Imewekwa kwenye Status yako (masaa 24)');};
+/* Tuma kwa mtu kwenye ujumbe */
+const nm=a=>E(a.role==='vendor'||a.role==='dalali'?a.shopName:a.name);
+window.ctmShChat=()=>{const s=window.__shItem,S=C.S,me=C.me;if(!s)return;if(!me)return openSignInPage();
+  const item=(a,f)=>`<button onclick="${f}" class="w-full flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-left"><img src="${ctmAv(a)}" class="w-9 h-9 rounded-full object-cover"><b class="text-white text-xs flex-1 truncate">${nm(a)}</b><span class="text-emerald-400 text-[11px] font-bold">Tuma</span></button>`;
+  const mine=S.chats.filter(c=>c.a===me.id||c.b===me.id).sort((x,y)=>(y.ts||0)-(x.ts||0)).map(c=>({c,a:S.accounts.find(x=>x.id===(c.a===me.id?c.b:c.a))})).filter(x=>x.a);
+  window.ctmShFind=q=>{q=String(q||'').toLowerCase().trim();const box=$('sh-res');if(!box)return;if(q.length<2){box.innerHTML='';return;}
+    box.innerHTML=S.accounts.filter(a=>a.id!==me.id&&a.role!=='admin'&&String(a.role==='vendor'||a.role==='dalali'?a.shopName:a.name).toLowerCase().includes(q)).slice(0,12).map(a=>item(a,`ctmShToNew(${a.id})`)).join('')||'<p class="text-slate-400 text-xs text-center py-2">Hakuna aliyepatikana.</p>';};
+  ctmOpenOverlay('Tuma kwa mtu',`<input oninput="ctmShFind(this.value)" placeholder="Tafuta mtu au duka..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs outline-none"><div id="sh-res" class="space-y-2"></div><p class="text-[10px] text-slate-400 pt-2">Mazungumzo yako</p>${mine.map(x=>item(x.a,`ctmShToChat(${x.c.id})`)).join('')||'<p class="text-slate-400 text-xs text-center py-4">Huna mazungumzo bado - tafuta mtu juu.</p>'}`);};
+window.ctmShToChat=cid=>{const s=window.__shItem,S=C.S,me=C.me,c=S.chats.find(x=>x.id===cid);if(!s||!c||!me)return;
+  (S.msgs[c.id]=S.msgs[c.id]||[]).push({from:me.id,text:txtFor(s.k,s.id).slice(0,1000),ts:Date.now()});c.ts=Date.now();c.read=c.read||{};c.read[me.id]=Date.now();C.persist();C.hydrate();ctmClosePeople();tst('Imetumwa');};
+window.ctmShToNew=uid=>{const s=window.__shItem,S=C.S,me=C.me;if(!s||!me)return;let c=S.chats.find(x=>(x.a===me.id&&x.b===uid)||(x.a===uid&&x.b===me.id));
+  if(!c){c={id:C.nid(),a:me.id,b:uid,ts:Date.now(),read:{}};S.chats.push(c);S.msgs[c.id]=[];}
+  (S.msgs[c.id]=S.msgs[c.id]||[]).push({from:me.id,text:txtFor(s.k,s.id).slice(0,1000),ts:Date.now()});c.ts=Date.now();c.read=c.read||{};c.read[me.id]=Date.now();C.persist();C.hydrate();ctmClosePeople();tst('Imetumwa');};
+/* Reel: tuma video yenyewe kama faili (Web Share) - au ipakuliwe kama kifaa hakisaidii */
+window.ctmReelFile=async id=>{const r=(C.S.reels||[]).find(x=>x.id===id||String(x.id)===String(id));if(!r||!r.videoUrl)return alert('Reel hii haina video.');
+  tst('Inaandaa video...');
+  try{const res=await fetch(r.videoUrl);if(!res.ok)throw new Error('fetch');const b=await res.blob(),f=new File([b],((r.title||'reel').replace(/[^\w-]+/g,'_').slice(0,40)||'reel')+'.mp4',{type:b.type||'video/mp4'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:r.title||'Reel',text:(r.title||'Reel')+'\n'+ctmLink('reel',r.id)});return;}
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),30000);
+    alert('Kifaa chako hakiruhusu kushiriki faili moja kwa moja, kwa hiyo video imepakuliwa. Unaweza kuituma kama faili.');
+  }catch(e){if(e&&e.name==='AbortError')return;window.open(r.videoUrl,'_blank','noopener');}};
+/* Kitufe cha "Shiriki" cha reel: ongeza chaguo za video yenyewe, bidhaa na duka */
+const _rs=window.ctmReelShare;
+window.ctmReelShare=function(id){_rs&&_rs(id);try{const r=(C.S.reels||[]).find(x=>x.id===id),ov=$('people-ov');if(!r||!ov)return;
+  const b=(c,f,l)=>`<button onclick="${f}" class="w-full ${c} text-left font-bold text-xs px-4 py-3 rounded-xl mt-2">${l}</button>`;
+  const more=[r.videoUrl?b('bg-violet-600 text-white',`ctmReelFile(${id})`,'🎞 Tuma video yenyewe (faili)'):'',r.productId?b('bg-slate-800 text-emerald-300',`ctmShareItem('product',${r.productId})`,'🛍 Shiriki bidhaa ya reel hii (kiungo)'):'',r.vendorId?b('bg-slate-800 text-emerald-300',`ctmShareItem('shop',${r.vendorId})`,'🏪 Shiriki duka (kiungo)'):''].join('');
+  const box=ov.firstElementChild;if(box)box.insertAdjacentHTML('beforeend',more);}catch(e){}};
+/* Share ya live: kiungo cha live yenyewe (si ukurasa wa mwanzo) */
+window.ctmLiveLinkFor=id=>ctmLink('live',id);
+
+/* ================= 3. QR YA DUKA + SCAN ================= */
+/* QR sasa ina kiungo cha duka (?shop=ID): ukiscan kwa kamera yoyote au scanner ya app, inafungua bidhaa za duka hilo */
+window.renderQrCodeView=function(){hideFloatingWidgetOnOtherPages();const me=C.me||currentUser,u=ctmLink('shop',me.id);
+  return `<div class="p-4 space-y-4 w-full max-w-md md:max-w-xl mx-auto pb-20 text-center">
+   <div class="flex items-center gap-2 border-b border-slate-800 pb-3 text-left"><button onclick="ctmBack(()=>{switchTab('akaunti')})" class="p-1.5 bg-slate-800 rounded-lg text-slate-300">←</button><h3 class="font-bold text-sm text-slate-100">QR Code ya Duka Lako</h3></div>
+   <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-3 shadow-2xl max-w-sm mx-auto">
+    <h4 class="font-extrabold text-base text-emerald-400">${E(me.shopName||me.name)}</h4>
+    <div class="bg-white p-3 rounded-2xl inline-block shadow"><img id="shop-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=6&data=${encodeURIComponent(u)}" width="220" height="220" class="mx-auto" alt="QR ya duka"></div>
+    <p class="text-[11px] text-slate-300">Mteja akiscan QR hii, anafunguliwa moja kwa moja <b>bidhaa za duka lako</b>.</p>
+    <p class="text-[10px] text-sky-300 break-all">${E(u)}</p>
+    <div class="grid grid-cols-2 gap-2"><button onclick="ctmShareItem('shop',${me.id})" class="bg-emerald-500 text-slate-950 font-extrabold text-xs py-2.5 rounded-xl">🔗 Shiriki</button><button onclick="ctmQrDownload()" class="bg-slate-800 text-slate-100 font-bold text-xs py-2.5 rounded-xl">⬇ Pakua QR</button></div>
+   </div></div>`;};
+window.ctmQrDownload=async()=>{const im=$('shop-qr');if(!im)return;try{const r=await fetch(im.src),b=await r.blob(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='qr-duka.png';document.body.appendChild(a);a.click();a.remove();}catch(e){window.open(im.src,'_blank','noopener');}};
+/* Scanner ya app: kiungo cha CTM au QR ya zamani (CloserMarketVendor_Jina) inafungua duka */
+window.ctmScanRoute=code=>{code=String(code||'').trim();const p=parse(code);if(p){setTimeout(()=>ctmOpenLink(p.kind,p.id),50);return true;}
+  const m=code.match(/^CloserMarketVendor_(.+)$/);if(m){const a=(C.S.accounts||[]).find(x=>(x.role==='vendor'||x.role==='dalali')&&x.shopName===m[1]);if(a){setTimeout(()=>ctmOpenLink('shop',a.id),50);return true;}}
+  return false;};
+
+/* ================= 4. NAULI YA USAFIRISHAJI (umbali -> piki piki / gari / basi) ================= */
+const LBL={boda:'🏍 Piki piki',car:'🚗 Gari',bus:'🚌 Basi'};
+const MODES=['boda','car','bus'];
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}},lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+const st={sel:{},negotiate:false,noGps:false};
+const myLoc=()=>{if(st.noGps)return null;if(window.__custLoc)return window.__custLoc;try{const j=JSON.parse(lsGet('ctm_loc')||'null');if(j&&Date.now()-j.ts<6*3600e3&&isFinite(j.lat)&&isFinite(j.lng)){window.__custLoc={lat:j.lat,lng:j.lng};return window.__custLoc;}}catch(e){}return null;};
+const myRegion=()=>st.region||lsGet('ctm_region')||lsGet('ctm_region_auto')||(C.me&&C.me.region)||'';
+const shopOf=vid=>{const a=acc(vid);if(!a)return{};const b=a.role==='dalali'?(acc(a.parentId)||a):a;return{name:b.shopName||a.shopName,lat:b.lat,lng:b.lng,locMarked:b.locMarked,region:b.region,distanceKm:b.distanceKm,fare:b.fare,bossId:b.id};};
+const groups=()=>{const g={};(typeof cartItems!=='undefined'?cartItems:[]).forEach(i=>{const v=i.vendorId||0;(g[v]=g[v]||{vid:v,goods:0})&&(g[v].goods+=i.price);});return Object.values(g);};
+const isPickup=()=>{const e=$('fulfillment_type');return !!e&&e.value==='Pickup';};
+const quoteFor=g=>{const s=shopOf(g.vid),loc=myLoc();return F.quote(s,{lat:loc?loc.lat:null,lng:loc?loc.lng:null,region:myRegion()},g.goods);};
+const chosen=(g,q)=>{let m=st.sel[g.vid];if(!m||!q.modes[m]||!q.modes[m].ok)m=q.def;return m?q.modes[m]:null;};
+/* Jumla ya nauli ya vikapu vyote (kwa getDeliveryFeeDetails) */
+window.getDeliveryFeeDetails=function(){
+  if(isPickup())return{fee:0,label:'Bure (Pickup Dukani)'};
+  const gs=groups();let fee=0,legacy=false;
+  gs.forEach(g=>{const q=quoteFor(g),m=chosen(g,q);if(m)fee+=m.fee;else{legacy=true;const s=shopOf(g.vid);fee+=Math.round(+(acc(s.bossId)||{}).baseDeliveryFee||3000);}});
+  if(!gs.length)return{fee:3000,label:'TZS 3,000'};
+  return{fee,label:fmt(fee)+(gs.length>1?` (maduka ${gs.length})`:'')};};
+window.updateCartTotals=function(){
+  const sub=cartItems.reduce((s,i)=>s+i.price,0),d=getDeliveryFeeDetails();
+  const a=$('delivery-fee-display'),b=$('grand-total-display');if(a)a.innerText=d.label;if(b)b.innerText=fmt(sub+d.fee);ctmFareRender();};
+window.ctmFareSet=(vid,m)=>{st.sel[vid]=m;updateCartTotals();};
+window.ctmFareNeg=on=>{st.negotiate=!!on;};
+window.ctmFareLocate=q=>{if(!navigator.geolocation)return q===true||tst('Kifaa hakina GPS');if(q!==true)tst('Inatafuta eneo lako...');
+  navigator.geolocation.getCurrentPosition(p=>{st.noGps=false;st.region='';window.__custLoc={lat:p.coords.latitude,lng:p.coords.longitude};lsSet('ctm_loc',JSON.stringify({lat:p.coords.latitude,lng:p.coords.longitude,ts:Date.now()}));updateCartTotals();if(q!==true)tst('Eneo lako limepatikana');},()=>{if(q!==true)tst('Ruhusu eneo kwenye browser ili nauli ihesabiwe kwa umbali');},{enableHighAccuracy:true,timeout:10000});};
+window.ctmFareRegion=r=>{st.region=r;st.noGps=!!r;updateCartTotals();};
+window.ctmFareChat=vid=>{const s=shopOf(vid),g=groups().find(x=>String(x.vid)===String(vid));if(!g)return;const q=quoteFor(g),m=chosen(g,q);
+  const t=`Habari, nauli ya ${m?LBL[m.id].replace(/^\S+\s/,'').toLowerCase():'usafirishaji'} kwa oda yangu ni ${m?fmt(m.fee):'-'}${m?` (${m.km} km)`:''}. Naomba tujadiliane kuhusu nauli.`;
+  ctmChatWith(+vid);setTimeout(()=>{const i=$('chat-msg-input');if(i){i.value=t;i.focus();}},300);};
+const etaTxt=m=>m.eta>=120?('~saa '+Math.round(m.eta/60)):('~dakika '+m.eta);
+window.ctmFareRender=function(){const box=$('ctm-fare-box');if(!box)return;
+  if(!st.auto){st.auto=1;try{navigator.permissions&&navigator.permissions.query({name:'geolocation'}).then(p=>{if(p.state==='granted'&&!myLoc())ctmFareLocate(true);}).catch(()=>{});}catch(e){}}
+  if(isPickup()){box.innerHTML='<p class="text-[11px] text-emerald-300 bg-slate-950 border border-slate-800 rounded-xl p-2.5">Utafuata mzigo mwenyewe dukani - hakuna nauli.</p>';return;}
+  const gs=groups(),loc=myLoc(),R=F.NAMES,reg=myRegion();
+  const top=`<div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 space-y-2"><p class="text-[11px] text-slate-300">📍 Nauli inahesabiwa kwa <b>umbali</b> kati ya duka na eneo unalopelekewa.</p>
+   <div class="flex gap-2 items-center"><button onclick="ctmFareLocate()" class="bg-emerald-500 text-slate-950 font-extrabold text-[11px] px-3 py-2 rounded-lg whitespace-nowrap">📍 Tumia eneo langu</button>
+   <select onchange="ctmFareRegion(this.value)" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-white py-2 px-1"><option value="">${loc&&!st.noGps?'GPS ('+F.nearest(loc.lat,loc.lng)+')':'Chagua mkoa unaopelekewa'}</option>${R.map(n=>`<option value="${n}" ${st.noGps&&reg===n?'selected':''}>${n}</option>`).join('')}</select></div>
+   ${loc&&!st.noGps?'<p class="text-[10px] text-emerald-400">✔ Eneo lako (GPS) limetumika - hesabu ni sahihi zaidi.</p>':'<p class="text-[10px] text-amber-300">Bila GPS bei ni makadirio. Bonyeza "Tumia eneo langu" kupata bei sahihi.</p>'}</div>`;
+  const cards=gs.map(g=>{const q=quoteFor(g),cur=chosen(g,q),s=shopOf(g.vid);
+    const row=id=>{const m=q.modes[id],on=cur&&cur.id===id;
+      if(!m.ok)return `<div class="flex items-start gap-2 p-2 rounded-lg border border-slate-800 opacity-45"><span class="text-base">${LBL[id].split(' ')[0]}</span><div class="flex-1 min-w-0"><p class="text-[11px] font-bold text-slate-300">${LBL[id].replace(/^\S+\s/,'')}</p><p class="text-[10px] text-slate-400">${E(m.why)}</p></div></div>`;
+      return `<button type="button" onclick="ctmFareSet(${g.vid},'${id}')" class="w-full text-left flex items-start gap-2 p-2 rounded-lg border ${on?'border-emerald-400 bg-emerald-500/10':'border-slate-800 bg-slate-900'}"><span class="mt-0.5 w-4 h-4 rounded-full border ${on?'border-emerald-400 bg-emerald-400':'border-slate-500'} shrink-0"></span><span class="text-base">${LBL[id].split(' ')[0]}</span>
+        <div class="flex-1 min-w-0"><p class="text-[11px] font-bold text-white">${LBL[id].replace(/^\S+\s/,'')} <span class="text-slate-400 font-normal">· ${m.km} km · ${etaTxt(m)}</span></p>
+        ${id==='bus'?`<p class="text-[10px] text-sky-300">Mzigo unatua: <b>${E(m.stand)}</b> (${E(m.region)}). Unaufuata hapo mwenyewe.</p>`:''}</div>
+        <b class="text-xs ${on?'text-emerald-300':'text-slate-200'} whitespace-nowrap">${m.free?'BURE':fmt(m.fee)}</b></button>`;};
+    return `<div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5"><div class="flex justify-between items-center"><p class="text-xs font-extrabold text-white truncate">🏪 ${E(s.name||'Duka')}</p><span class="text-[10px] text-slate-400">${q.km} km${q.est?' (makadirio)':''}</span></div>
+      ${MODES.map(row).join('')}${q.free?`<p class="text-[10px] text-emerald-300">🎁 Usafirishaji bure kwa manunuzi ya ${fmt(q.freeOver)} au zaidi.</p>`:''}
+      <button type="button" onclick="ctmFareChat(${g.vid})" class="text-[11px] text-sky-300 underline">💬 Zungumza na muuzaji kuhusu nauli</button></div>`;}).join('');
+  const neg=`<label class="flex items-start gap-2 text-[11px] text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-2.5"><input type="checkbox" ${st.negotiate?'checked':''} onchange="ctmFareNeg(this.checked)" class="mt-0.5"><span>Nataka kujadili nauli na muuzaji kabla ya kulipa. <span class="text-slate-500">Oda itatumwa bila kulipa mara moja; muuzaji akibadili nauli, jumla inabadilika kisha unalipa kutoka <b>Oda Zangu</b>.</span></span></label>`;
+  box.innerHTML=`<div class="space-y-2">${top}${cards}${neg}</div>`;};
+/* Kinachotumwa kwa seva wakati wa kuagiza */
+window.ctmFareChoice=function(){const loc=myLoc(),modes={};groups().forEach(g=>{const m=chosen(g,quoteFor(g));if(m)modes[g.vid]=m.id;});
+  return{loc:loc?{lat:loc.lat,lng:loc.lng}:null,noGps:!loc,region:myRegion()||undefined,modes,mode:Object.values(modes)[0],negotiate:st.negotiate};};
+/* Kikapu kikichorwa (kisanduku #ctm-fare-box kipo tupu) - jaza nauli */
+new MutationObserver(()=>{const b=$('ctm-fare-box');if(b&&!b.firstChild){try{ctmFareRender();const sub=cartItems.reduce((s,i)=>s+i.price,0),d=getDeliveryFeeDetails(),a=$('delivery-fee-display'),g=$('grand-total-display');if(a)a.innerText=d.label;if(g)g.innerText=fmt(sub+d.fee);}catch(e){console.warn('fare',e);}}}).observe(document.body,{childList:true,subtree:true});
+/* Mstari wa nauli kwenye Oda Zangu (mteja): mchanganuo + kitufe cha kulipa kama bado */
+const modeTxt=o=>({boda:'🏍 Piki piki',car:'🚗 Gari',bus:'🚌 Basi',pickup:'Pickup',legacy:'Usafiri'})[o.deliveryMode]||'Usafiri';
+window.ctmFareLine=function(o){if(typeof o.goods!=='number')return '';
+  const del=o.fulfillment==='Delivery';let h=`<p class="text-[10px] text-slate-400">Bidhaa ${fmt(o.goods)}${del?` + ${modeTxt(o)} ${fmt(o.deliveryFee||0)}${o.distanceKm?` (${o.distanceKm} km${o.deliveryEst?', makadirio':''})`:''}${o.feeBy==='vendor'?' · nauli ya muuzaji':''}`:''}</p>`;
+  if(del&&o.deliveryMode==='bus'&&o.stand)h+=`<p class="text-[10px] text-sky-300">🚌 Mzigo utatua: <b>${E(o.stand)}</b>${o.destRegion?' ('+E(o.destRegion)+')':''}. Utaufuata hapo.</p>`;
+  if(o.payStatus==='PENDING'){h+=`<p class="text-[10px] text-amber-300">${o.negotiate?'💬 Unajadili nauli na muuzaji - subiri ujumbe wake. ':''}Haijalipwa.</p><div class="flex gap-2 pt-1"><button onclick="ctmPayOrder('${o.id}')" class="bg-emerald-500 text-slate-950 font-extrabold text-[11px] px-3 py-1.5 rounded-lg">Lipa ${fmt(o.total)}</button>${o.vendorId?`<button onclick="ctmChatWith(${o.vendorId})" class="bg-slate-800 text-slate-200 text-[11px] px-3 py-1.5 rounded-lg">💬 Muuzaji</button>`:''}</div>`;}
+  return h;};
+window.ctmPayOrder=id=>{const o=(C.S.orders||[]).find(x=>x.id===id);if(!o)return;if(window.ctmPay)ctmPay('order',[id],()=>setTimeout(()=>{try{C.hydrate();renderCurrentTab();}catch(e){}},300),o.total);};
+/* Mstari wa nauli kwa muuzaji: anaona nauli na anaweza kuibadilisha kabla mteja hajalipa */
+window.ctmFareRow=function(o){if(typeof o.goods!=='number'||o.fulfillment!=='Delivery')return '';
+  let h=`<p class="text-[11px] text-slate-300">🚚 ${modeTxt(o)} ${fmt(o.deliveryFee||0)}${o.distanceKm?` · ${o.distanceKm} km`:''}${o.feeBy==='vendor'?' (umebadilisha)':''}</p>`;
+  if(o.deliveryMode==='bus'&&o.stand)h+=`<p class="text-[10px] text-sky-300">🚌 Mteja anapokea: ${E(o.stand)}${o.destRegion?' ('+E(o.destRegion)+')':''}</p>`;
+  if(o.payStatus==='PENDING')h+=`${o.negotiate?'<p class="text-[11px] text-amber-300 font-bold">💬 Mteja anaomba kujadili nauli</p>':''}<button onclick="ctmEditFee('${o.id}')" class="mt-1 bg-amber-500 text-slate-950 font-extrabold text-[11px] px-3 py-1.5 rounded-lg">✏️ Badilisha nauli</button> <span class="text-[10px] text-slate-500">(hadi mteja alipe)</span>`;
+  return h;};
+window.ctmEditFee=id=>{const o=(C.S.orders||[]).find(x=>x.id===id);if(!o)return;
+  ctmPrompt('Nauli mpya ya oda '+id+' (TZS). Weka 0 kama ni bure:',String(o.deliveryFee||0),async v=>{if(v==null)return;const n=Math.round(+String(v).replace(/[^\d.]/g,''));if(!(n>=0&&n<=500000))return alert('Weka nauli kati ya 0 na 500,000.');
+    try{const r=await window.__call('setDeliveryFee',{orderId:id,fee:n});tst('Nauli imebadilishwa. Jumla mpya '+fmt(r.total));try{C.hydrate();renderCurrentTab();}catch(e){}}catch(e){alert(e.message||'Imeshindwa kubadilisha nauli');}});};
+/* Muuzaji: weka bei zake za nauli */
+window.ctmFareSettings=function(){const me=C.me;if(!me||me.role!=='vendor')return;const c=F.cfg(me),inp='w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white',on=k=>!(c.off&&c.off[k]);
+  const row=(k,t)=>`<div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5"><label class="flex items-center gap-2 text-xs font-bold text-white"><input type="checkbox" id="fs-on-${k}" ${on(k)?'checked':''}> ${t}</label><div class="grid grid-cols-2 gap-2"><div><p class="text-[10px] text-slate-400">Nauli ya kuanzia (TZS)</p><input id="fs-b-${k}" type="number" min="0" value="${c[k][0]}" class="${inp}"></div><div><p class="text-[10px] text-slate-400">Kwa kila km (TZS)</p><input id="fs-p-${k}" type="number" min="0" value="${c[k][1]}" class="${inp}"></div></div></div>`;
+  ctmOpenOverlay('🚚 Nauli za Usafirishaji',`<div class="space-y-2"><p class="text-[11px] text-slate-300">Nauli ya mteja inahesabiwa <b>otomatiki</b> kutoka umbali wa duka lako hadi alipo. Weka bei zako hapa. Unaweza pia kuibadilisha kwa kila oda (Oda &gt; ✏️ Badilisha nauli) mkishakubaliana na mteja.</p>
+   ${row('boda','🏍 Piki piki (hadi km 30)')}${row('car','🚗 Gari (hadi km 120)')}${row('bus','🚌 Basi (safari ndefu, kuanzia km 20)')}
+   <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5"><p class="text-[10px] text-slate-400">Usafirishaji bure kwa manunuzi ya TZS ... au zaidi (0 = hakuna)</p><input id="fs-free" type="number" min="0" value="${c.freeOver||0}" class="${inp}"></div>
+   <p class="text-[10px] text-slate-500">Bei ya basi inajumuisha kupeleka mzigo hadi stendi ya basi ya mkoa wa mteja; mteja anaufuata kituoni. Makato ya CTM (5%) yanahesabiwa kwenye bei ya bidhaa tu, si kwenye nauli.</p>
+   <button onclick="ctmFareSave()" class="w-full bg-emerald-500 text-slate-950 font-extrabold py-3 rounded-xl text-xs">Hifadhi Nauli</button></div>`);};
+window.ctmFareSave=()=>{const me=C.me;if(!me)return;const n=id=>Math.max(0,Math.round(+($(id).value)||0)),f={off:{}};
+  MODES.forEach(k=>{f[k]=[n('fs-b-'+k),n('fs-p-'+k)];if(!$('fs-on-'+k).checked)f.off[k]=true;});f.freeOver=n('fs-free');
+  me.fare=f;C.persist();try{C.hydrate();}catch(e){}ctmClosePeople();tst('Nauli zimehifadhiwa');};
+})();
+</script>
+
+<script>
+/* ===== CTM V38: takwimu halisi za story, swipe yenye mwendo (Karibu <-> Mikoani) ===== */
+(function(){
+const C=window.__ctm,$=id=>document.getElementById(id);
+/* ---- Story: idadi halisi ya walioona (watu tofauti) na likes, masaa 24 ---- */
+const DAY=864e5,mine=()=>{const me=C.me;return me&&C.S?(C.S.stories||[]).filter(s=>s.ownerId===me.id&&Date.now()-s.ts<DAY):[];};
+const viewersOf=(id,me)=>(C.S.accounts||[]).filter(a=>a.id!==me.id&&(a.seen||[]).includes(id)).length;
+window.ctmStoryStatText=()=>{const me=C.me;if(!me||!C.S)return '';const ss=mine(),ids=new Set(ss.map(s=>s.id)),v=new Set();
+  (C.S.accounts||[]).forEach(a=>{if(a.id!==me.id&&(a.seen||[]).some(x=>ids.has(x)))v.add(a.id);});
+  const l=ss.reduce((n,s)=>n+(s.likes||[]).length,0);
+  return ss.length?`<span class="text-emerald-300 font-bold">${v.size} walioona · ❤ ${l} · story ${ss.length}</span>`:'<span class="text-slate-400">Huna story ndani ya masaa 24</span>';};
+window.ctmStoryStats=()=>{const me=C.me;if(!me)return;const ss=mine().sort((a,b)=>b.ts-a.ts),ids=new Set(ss.map(s=>s.id)),v=new Set();
+  (C.S.accounts||[]).forEach(a=>{if(a.id!==me.id&&(a.seen||[]).some(x=>ids.has(x)))v.add(a.id);});
+  const likes=ss.reduce((n,s)=>n+(s.likes||[]).length,0);
+  const card=s=>`<div class="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl p-2">${s.type==='image'?`<img src="${C.esc(s.mediaUrl)}" class="w-12 h-12 rounded-lg object-cover">`:s.type==='video'?'<div class="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl">🎬</div>':`<div class="w-12 h-12 rounded-lg flex items-center justify-center text-[8px] p-1 text-center overflow-hidden" style="background:${C.esc(s.bg||'#0f766e')};color:${C.esc(s.color||'#fff')}">${C.esc((s.text||'').slice(0,24))}</div>`}
+    <div class="flex-1 min-w-0"><p class="text-white text-xs truncate">${C.esc((s.text||'Story').slice(0,40))}</p><p class="text-[10px] text-slate-400">${C.ago(s.ts)}</p></div>
+    <button onclick="ctmShowPeople('viewers',${s.id})" class="text-[11px] text-white bg-slate-800 rounded-lg px-2 py-1">👁 ${viewersOf(s.id,me)}</button><button onclick="ctmShowPeople('storylikes',${s.id})" class="text-[11px] text-white bg-slate-800 rounded-lg px-2 py-1">❤ ${(s.likes||[]).length}</button></div>`;
+  ctmOpenOverlay('Story zangu (masaa 24)',`<div class="grid grid-cols-3 gap-2 text-center"><div class="bg-slate-900 border border-slate-800 rounded-xl p-2"><p class="text-lg font-black text-emerald-300">${v.size}</p><p class="text-[10px] text-slate-400">Watu walioona</p></div><div class="bg-slate-900 border border-slate-800 rounded-xl p-2"><p class="text-lg font-black text-pink-300">${likes}</p><p class="text-[10px] text-slate-400">Likes</p></div><div class="bg-slate-900 border border-slate-800 rounded-xl p-2"><p class="text-lg font-black text-sky-300">${ss.length}</p><p class="text-[10px] text-slate-400">Story</p></div></div>${ss.map(card).join('')||'<p class="text-slate-400 text-xs text-center py-8">Huna story ndani ya masaa 24. Weka story kwenye Soko ili wateja waione.</p>'}<p class="text-[10px] text-slate-500 text-center pt-2">Idadi ni ya watu tofauti waliofungua story zako (wanaokufuata).</p>`);};
+
+/* ---- Swipe ya Soko: Karibu <-> Mikoani, ukurasa unafuata kidole (mwendo halisi) ---- */
+const main=$('main-content');if(!main)return;
+main.style.touchAction='pan-y';
+window.handleTouchStart=function(){};window.handleTouchEnd=function(){}; /* swipe ya zamani (bila mwendo) imezimwa */
+let st=null,busy=false;const W=()=>main.clientWidth||innerWidth;
+const hScroll=el=>{while(el&&el!==main){if(el.scrollWidth>el.clientWidth+4){const o=getComputedStyle(el).overflowX;if(o==='auto'||o==='scroll')return true;}el=el.parentElement;}return false;};
+function prepare(next){
+  const css='width:100%;display:flex;flex-direction:column;align-items:center;will-change:transform';
+  const cur=document.createElement('div');cur.style.cssText=css;while(main.firstChild)cur.appendChild(main.firstChild);
+  const flag=showMikoaniOnly;let html='';showMikoaniOnly=!flag;try{html=renderSoko();}catch(e){console.warn('swipe',e);}finally{showMikoaniOnly=flag;}
+  const pane=document.createElement('div');pane.style.cssText=css+';position:absolute;left:0;top:0;pointer-events:none';pane.innerHTML=html;
+  main.style.position='relative';main.style.overflowX='hidden';main.appendChild(cur);main.appendChild(pane);
+  try{window.lucide&&lucide.createIcons();}catch(e){}
+  pane.style.minHeight=cur.offsetHeight+'px';
+  const p={cur,pane,next};setX(p,0,0);return p;}
+function setX(p,x,dur){const t=dur?`transform ${dur}ms cubic-bezier(.22,.8,.3,1)`:'none';p.cur.style.transition=t;p.pane.style.transition=t;
+  p.cur.style.transform=`translate3d(${x}px,0,0)`;p.pane.style.transform=`translate3d(${x+(p.next?W():-W())}px,0,0)`;}
+function finish(p,commit){const dur=300;setX(p,commit?(p.next?-W():W()):0,dur);
+  setTimeout(()=>{main.style.position='';main.style.overflowX='';
+    if(commit){showMikoaniOnly=p.next;try{toggleMikoaniFilterStateUI();}catch(e){}switchTab('soko');}
+    else{p.pane.remove();while(p.cur.firstChild)main.insertBefore(p.cur.firstChild,p.cur);p.cur.remove();}
+    busy=false;},dur+30);}
+const reset=()=>{if(st&&st.p){busy=true;finish(st.p,false);}if(st&&st.band){main.style.transition='transform .25s';main.style.transform='';}st=null;};
+main.addEventListener('touchstart',e=>{if(busy||currentTab!=='soko'||e.touches.length!==1){st=null;return;}
+  const t=e.target;if(t.closest&&t.closest('.leaflet-container,input,textarea,select,video,button[data-noswipe]')||hScroll(t)){st=null;return;}
+  st={x:e.touches[0].clientX,y:e.touches[0].clientY,t0:Date.now(),mode:0,p:null,dx:0};main.style.transition='';},{passive:true});
+main.addEventListener('touchmove',e=>{if(!st||busy)return;if(e.touches.length!==1){reset();return;}
+  const dx=e.touches[0].clientX-st.x,dy=e.touches[0].clientY-st.y;
+  if(!st.mode){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;if(Math.abs(dx)>Math.abs(dy)*1.3){const next=dx<0,ok=next?!showMikoaniOnly:showMikoaniOnly;if(ok){st.p=prepare(next);st.mode=1;}else{st.mode=2;st.band=true;}}else{st=null;return;}}
+  if(st.mode===1){const p=st.p;st.dx=p.next?Math.min(0,dx):Math.max(0,dx);setX(p,st.dx,0);}
+  else if(st.mode===2){main.style.transition='none';main.style.transform=`translate3d(${Math.max(-40,Math.min(40,dx*0.2))}px,0,0)`;}},{passive:true});
+main.addEventListener('touchend',()=>{if(!st)return;
+  if(st.mode===1){const p=st.p,dx=st.dx,v=Math.abs(dx)/Math.max(1,Date.now()-st.t0),go=Math.abs(dx)>W()*0.3||(v>0.45&&Math.abs(dx)>30);busy=true;st=null;finish(p,go);}
+  else if(st.mode===2){main.style.transition='transform .25s';main.style.transform='';st=null;}else st=null;},{passive:true});
+main.addEventListener('touchcancel',reset,{passive:true});
+/* Kitufe cha "Mikoani" nacho kinateleza kwa mwendo huo huo */
+const orig=window.toggleMikoaniFilterDirect;
+window.toggleMikoaniFilterDirect=function(){if(currentTab!=='soko'||busy||st)return orig&&orig();busy=true;const p=prepare(!showMikoaniOnly);void main.offsetWidth;finish(p,true);};
 })();
 </script>
 </body>
