@@ -7,3 +7,7 @@
   Cache-Control: no-cache
 /firebase-messaging-sw.js
   Cache-Control: no-cache
+/fare.js
+  Cache-Control: no-cache
+/firebase-config.static.js
+  Cache-Control: no-cache

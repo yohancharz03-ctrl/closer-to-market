@@ -4,12 +4,12 @@
    Hizi ni taarifa za UMMA za app ya web (si siri). USIWEKE service account hapa. */
 (function () {
   var c = {
-     apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
   };
   if (!window.CTM_FIREBASE_CONFIG && c.apiKey && c.projectId && c.appId) window.CTM_FIREBASE_CONFIG = c;
 })();

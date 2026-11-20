@@ -780,8 +780,14 @@ if (window.CTM_FIREBASE_CONFIG) {
                 cartItems.push(p);
                 p.stock--;
                 document.getElementById('cart-badge').innerText = cartItems.length;
-                playNotificationSound();
-                renderCurrentTab();
+                try { playNotificationSound(); } catch (e) {}
+                if (currentTab !== 'reels') renderCurrentTab();
+                else {
+                    const t = document.createElement('div');
+                    t.textContent = '🛒 Imewekwa kikapuni (' + cartItems.length + ')';
+                    t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#0f172a;color:#fff;border:1px solid #10b981;padding:8px 14px;border-radius:999px;font-size:12px;z-index:99999';
+                    document.body.appendChild(t); setTimeout(() => t.remove(), 1800);
+                }
             }
         }
         function addToCartFromOffer(name, price) {
@@ -2616,7 +2622,7 @@ window.__ctm={get S(){return S},get me(){return me},persist,notify,hydrate,esc,n
 <script>
 /* ===== CTM V12: Stories, Online, Toast, Chat media, Theme/Lang, Reels, Scanner, Ada ===== */
 (function(){
-const C=window.__ctm, $=id=>document.getElementById(id), DAY=864e5;
+const C=window.__ctm, $=id=>document.getElementById(id), esc=C.esc, DAY=864e5;
 const lsGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}};
 let notifSeen=null, lastOn='';
 /* ---------- Toast (badala ya alert) ---------- */
@@ -3573,7 +3579,7 @@ window.addEventListener('appinstalled',()=>{dip=null;const b=$('pwa-bar');if(b)b
 window.ctmInstall=async()=>{if(dip){dip.prompt();try{await dip.userChoice;}catch(e){}dip=null;const b=$('pwa-bar');if(b)b.remove();return;}
   if(standalone())return alert('App tayari imewekwa.');const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
   alert(ios?'iPhone/iPad: bonyeza kitufe cha Share (mraba wenye mshale), kisha "Add to Home Screen".':'Bonyeza menyu ya browser (⋮) kisha "Install app" au "Add to Home screen".');};
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('firebase-messaging-sw.js').catch(()=>{}));
+if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had||window.__rl||document.getElementById('live-ov'))return;window.__rl=1;location.reload();});window.addEventListener('load',()=>navigator.serviceWorker.register('firebase-messaging-sw.js').then(r=>r.update&&r.update()).catch(()=>{}));}
 window.addEventListener('load',()=>setTimeout(()=>{if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!standalone())showInstall();},4000));
 })();
 
@@ -3679,7 +3685,10 @@ const key=s=>[s.tab,s.chat||'',s.store||'',s.tab==='search_results'?'':s.q,s.bse
 const sc=()=>{const mc=document.getElementById('main-content');return {y:window.scrollY||document.documentElement.scrollTop||0,my:mc?mc.scrollTop:0};};
 /* ---- Kurasa (tabs na ndani yake) ---- */
 const _rc=window.renderCurrentTab;
-window.renderCurrentTab=function(){const pre=sc();_rc();if(restoring)return;const s=snap(),k=key(s);
+const KEEP=['soko','vendor_products','wishlist','order_history','cart'];
+window.renderCurrentTab=function(){const pre=sc(),same=lastKey!==null&&!restoring&&KEEP.includes(currentTab)&&key(snap())===lastKey;_rc();
+  if(same){try{window.scrollTo(0,pre.y);const mc=document.getElementById('main-content');if(mc)mc.scrollTop=pre.my;}catch(e){}}
+  if(restoring)return;const s=snap(),k=key(s);
   if(lastKey===null){lastKey=k;try{history.replaceState({nav:navId,view:s},'');}catch(e){}return;}
   if(k!==lastKey){scrolls.set(navId,pre);navId++;lastKey=k;try{history.pushState({nav:navId,view:s},'');}catch(e){}}};
 window.ctmBack=fb=>{if(navId>0)history.back();else{try{fb&&fb();}catch(e){}}};
@@ -4206,10 +4215,16 @@ window.ctmReelFile=async id=>{const r=(C.S.reels||[]).find(x=>x.id===id||String(
   }catch(e){if(e&&e.name==='AbortError')return;window.open(r.videoUrl,'_blank','noopener');}};
 /* Kitufe cha "Shiriki" cha reel: ongeza chaguo za video yenyewe, bidhaa na duka */
 const _rs=window.ctmReelShare;
-window.ctmReelShare=function(id){_rs&&_rs(id);try{const r=(C.S.reels||[]).find(x=>x.id===id),ov=$('people-ov');if(!r||!ov)return;
+window.ctmReelShareMenu=function(id){_rs&&_rs(id);try{const r=(C.S.reels||[]).find(x=>x.id===id),ov=$('people-ov');if(!r||!ov)return;
   const b=(c,f,l)=>`<button onclick="${f}" class="w-full ${c} text-left font-bold text-xs px-4 py-3 rounded-xl mt-2">${l}</button>`;
   const more=[r.videoUrl?b('bg-violet-600 text-white',`ctmReelFile(${id})`,'🎞 Tuma video yenyewe (faili)'):'',r.productId?b('bg-slate-800 text-emerald-300',`ctmShareItem('product',${r.productId})`,'🛍 Shiriki bidhaa ya reel hii (kiungo)'):'',r.vendorId?b('bg-slate-800 text-emerald-300',`ctmShareItem('shop',${r.vendorId})`,'🏪 Shiriki duka (kiungo)'):''].join('');
   const box=ov.firstElementChild;if(box)box.insertAdjacentHTML('beforeend',more);}catch(e){}};
+/* Kitufe cha Share cha reel: kinafungua moja kwa moja sehemu ya kushiriki ya simu (WhatsApp, Telegram, SMS, n.k.).
+   Kama kifaa/browser hakina, inafungua menyu ya ndani (tuma kwa mtu, status, nakili kiungo). */
+window.ctmReelShare=function(id){const r=(C.S.reels||[]).find(x=>String(x.id)===String(id));if(!r)return;
+  const url=ctmLink('reel',r.id),title=r.title||'Reel ya Closer Market';
+  if(navigator.share){navigator.share({title,text:'Angalia reel hii: '+title,url}).catch(e=>{if(e&&e.name==='AbortError')return;window.ctmReelShareMenu(id);});}
+  else window.ctmReelShareMenu(id);};
 /* Share ya live: kiungo cha live yenyewe (si ukurasa wa mwanzo) */
 window.ctmLiveLinkFor=id=>ctmLink('live',id);
 
@@ -4342,12 +4357,13 @@ const main=$('main-content');if(!main)return;
 main.style.touchAction='pan-y';
 window.handleTouchStart=function(){};window.handleTouchEnd=function(){}; /* swipe ya zamani (bila mwendo) imezimwa */
 let st=null,busy=false;const W=()=>main.clientWidth||innerWidth;
+const pos={};const scNow=()=>({y:window.scrollY||document.documentElement.scrollTop||0,my:main.scrollTop||0});let prev={tab:currentTab,mode:!!showMikoaniOnly};
 const hScroll=el=>{while(el&&el!==main){if(el.scrollWidth>el.clientWidth+4){const o=getComputedStyle(el).overflowX;if(o==='auto'||o==='scroll')return true;}el=el.parentElement;}return false;};
 function prepare(next){
   const css='width:100%;display:flex;flex-direction:column;align-items:center;will-change:transform';
   const cur=document.createElement('div');cur.style.cssText=css;while(main.firstChild)cur.appendChild(main.firstChild);
-  const flag=showMikoaniOnly;let html='';showMikoaniOnly=!flag;try{html=renderSoko();}catch(e){console.warn('swipe',e);}finally{showMikoaniOnly=flag;}
-  const pane=document.createElement('div');pane.style.cssText=css+';position:absolute;left:0;top:0;pointer-events:none';pane.innerHTML=html;
+  const flag=showMikoaniOnly;const tp=pos[!flag],tgt=tp?tp.y+tp.my:0,rect=main.getBoundingClientRect(),off=Math.max(0,main.scrollTop)+Math.max(0,-rect.top);let html='';showMikoaniOnly=!flag;try{html=renderSoko();}catch(e){console.warn('swipe',e);}finally{showMikoaniOnly=flag;}
+  const pane=document.createElement('div');pane.style.cssText=css+';position:absolute;left:0;top:'+off+'px;pointer-events:none';pane.innerHTML='<div style="position:relative;top:'+(-tgt)+'px;width:100%;display:flex;flex-direction:column;align-items:center">'+html+'</div>';
   main.style.position='relative';main.style.overflowX='hidden';main.appendChild(cur);main.appendChild(pane);
   try{window.lucide&&lucide.createIcons();}catch(e){}
   pane.style.minHeight=cur.offsetHeight+'px';
@@ -4375,6 +4391,12 @@ main.addEventListener('touchcancel',reset,{passive:true});
 /* Kitufe cha "Mikoani" nacho kinateleza kwa mwendo huo huo */
 const orig=window.toggleMikoaniFilterDirect;
 window.toggleMikoaniFilterDirect=function(){if(currentTab!=='soko'||busy||st)return orig&&orig();busy=true;const p=prepare(!showMikoaniOnly);void main.offsetWidth;finish(p,true);};
+const rc0=window.renderCurrentTab;
+window.renderCurrentTab=function(){const mode=!!showMikoaniOnly;
+  if(prev.tab==='soko'&&(currentTab!=='soko'||prev.mode!==mode))pos[prev.mode]=scNow();
+  const r=rc0.apply(this,arguments);
+  if(currentTab==='soko'&&prev.tab==='soko'&&prev.mode!==mode&&pos[mode]){const p=pos[mode];try{window.scrollTo(0,p.y);main.scrollTop=p.my;}catch(e){}}
+  prev={tab:currentTab,mode};return r;};
 })();
 </script>
 </body>

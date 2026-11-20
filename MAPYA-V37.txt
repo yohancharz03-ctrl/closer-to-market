@@ -21,3 +21,14 @@ V38 (nyongeza)
   la sivyo function ya firebase-config haipo); au (b) jaza public/firebase-config.static.js kwa thamani zako. Ujumbe sasa uko Kiswahili na unafungika (x).
 - Story Views & Likes (Akaunti ya muuzaji): inaonyesha idadi halisi ya watu tofauti walioona, likes na idadi ya story (masaa 24); ukibonyeza unaona kila story na orodha ya watu.
 - Soko: swipe kushoto/kulia sasa ukurasa unafuata kidole (Karibu <-> Mikoani), ukiachia mapema unarudi; kitufe cha Mikoani nacho kinateleza.
+
+V39 (marekebisho mawili)
+- Kitendo chochote kwenye kadi/ukurasa uleule (Follow Duka, kikapu, n.k.) hakirudishi tena ukurasa juu; scroll inabaki pale ulipo (soko, bidhaa za duka, wishlist, oda, kikapu).
+- Kitufe cha "Kikapu" ndani ya Reels sasa kinaweka bidhaa kikapuni bila kupakia upya reels (haikurudi tena kwenye reel ya kwanza); kinaonyesha ujumbe mdogo "Imewekwa kikapuni".
+
+V40: kitufe cha Share cha reel kinafungua moja kwa moja sehemu ya kushiriki ya simu (WhatsApp n.k.); menyu ya ndani ni mbadala kama simu haina.
+
+V41: hitilafu 'esc is not defined' kwenye menyu ya share ya reels imerekebishwa. Service worker (ctm-v41) sasa inapakia .js/.html mpya kwanza na app inajisasisha yenyewe toleo jipya likitoka (simu ilikuwa inatumia nakala ya zamani). Ukiona bado toleo la zamani: funga app kabisa na ufungue tena.
+
+V42 - Soko: kila soko (Karibu / Mikoani) linakumbuka nafasi yake ya scroll. Ukihama kwa swipe au kitufe kisha ukarudi, unarudi ulipoishia (si mwanzo). Ukurasa unaopita wakati wa swipe pia unaanzia nafasi hiyo. Follow hairudishi juu. Inajumuisha marekebisho ya V41 (esc, kapu la simu, SW).
+Kumbuka: funga app kabisa na uifungue tena mara moja ili toleo jipya lipakiwe.
